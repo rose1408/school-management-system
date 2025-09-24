@@ -49,17 +49,29 @@ export async function GET(request: Request) {
         if (lines[i].trim()) {
           const values = parseCSVLine(lines[i]);
           
-          // Your ENROLLMENT sheet columns: Timestamp, Student ID, Student's Full Name, Date of Birth, Age, Person to notify in Case of Emergency, Email Address, Contact Number, Social Media Consent, Status, Referral Source, Referral Details
+          // Column mapping for ENROLLMENT sheet:
+          // 0: Timestamp
+          // 1: Student ID  
+          // 2: Student's Full Name
+          // 3: Date of Birth
+          // 4: Age
+          // 5: Person to notify in Case of Emergency
+          // 6: Email Address
+          // 7: Contact Number
+          // 8: Social Media Consent
+          // 9: Status
+          // 10: Referral Source
+          // 11: Referral Details
           const [
             timestamp = '',
             studentId = '',
             fullName = '',
             dateOfBirth = '',
-            // age = '', // Not used
+            age = '', // Age column (not used in processing but needed for alignment)
             emergencyContact = '',
             emailAddress = '',
             contactNumber = '',
-            // socialMediaConsent = '', // Not used
+            socialMediaConsent = '', // Social Media Consent (not used in processing but needed for alignment)
             status = '',
             referralSource = '',
             referralDetails = ''
