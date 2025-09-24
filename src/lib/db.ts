@@ -19,7 +19,7 @@ export interface Student {
   email: string
   phone?: string
   dateOfBirth?: string
-  grade: string
+  age?: string
   address?: string
   parentName?: string
   parentPhone?: string
@@ -51,7 +51,7 @@ export const db = {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            grade: data.grade,
+            age: data.age,
             enrollmentDate: data.enrollmentDate,
             status: data.status,
             createdAt: data.createdAt,

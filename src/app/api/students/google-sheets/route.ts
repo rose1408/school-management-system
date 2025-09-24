@@ -114,17 +114,17 @@ export async function GET(request: Request) {
           const normalizedStatus = status.trim().toLowerCase();
           const studentStatus = (normalizedStatus === 'inactive' || normalizedStatus === 'suspended' || normalizedStatus === 'withdrawn') ? 'inactive' : 'active';
           
-          // Create student object
+          // Create student object with correct field mapping
           const student = {
             id: studentId.trim() || `STU${String(i).padStart(3, '0')}`,
             firstName: firstName,
             lastName: lastName,
             email: emailAddress.trim(),
-            phone: contactNumber.trim(),
-            dateOfBirth: dateOfBirth.trim(),
-            grade: 'Not specified', // Remove age-based grade assignment
+            phone: contactNumber.trim(), // Contact Number from sheet
+            dateOfBirth: dateOfBirth.trim(), // Date of Birth from sheet
+            grade: age.trim() || 'Not specified', // Use Age instead of grade
             address: [referralSource.trim(), referralDetails.trim()].filter(Boolean).join(' - ') || 'Not specified',
-            parentName: emergencyContact.trim(),
+            parentName: emergencyContact.trim(), // Person to notify in Case of Emergency
             parentPhone: '', // Not available as separate field
             enrollmentDate: enrollmentDate,
             studentId: studentId.trim() || `STU${String(i).padStart(3, '0')}`,

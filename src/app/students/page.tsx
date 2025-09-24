@@ -14,6 +14,7 @@ export default function StudentsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   
   // Google Sheets integration states
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
@@ -93,6 +94,54 @@ export default function StudentsPage() {
     }
   };
 
+  // Batch delete function
+  const handleBatchDelete = async () => {
+    if (selectedStudents.length === 0) {
+      alert('Please select students to delete');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedStudents.length} selected students?`)) {
+      return;
+    }
+
+    try {
+      for (const studentId of selectedStudents) {
+        const response = await fetch(`/api/students?id=${studentId}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to delete student:', studentId);
+        }
+      }
+      
+      setSelectedStudents([]);
+      alert(`Successfully deleted ${selectedStudents.length} students!`);
+    } catch (error) {
+      console.error('Error deleting students:', error);
+      alert('Failed to delete students');
+    }
+  };
+
+  // Toggle student selection
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  // Select all students
+  const toggleSelectAll = () => {
+    if (selectedStudents.length === filteredStudents.length) {
+      setSelectedStudents([]);
+    } else {
+      setSelectedStudents(filteredStudents.map(s => s.id));
+    }
+  };
+
   // Google Sheets integration functions
   const syncWithGoogleSheets = async () => {
     if (!googleSheetId.trim()) {
@@ -108,35 +157,51 @@ export default function StudentsPage() {
       const data = await response.json();
 
       if (response.ok && data.students) {
-        // Save each student to database
+        // Save/update each student in database
         let savedCount = 0;
+        let updatedCount = 0;
+        
         for (const studentData of data.students) {
           try {
-            const saveResponse = await fetch('/api/students', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(studentData)
-            });
+            // First, check if student exists by email or studentId
+            const existingStudent = students.find(s => 
+              s.email === studentData.email || 
+              s.studentId === studentData.studentId ||
+              (s.firstName === studentData.firstName && s.lastName === studentData.lastName)
+            );
             
-            if (saveResponse.ok) {
-              savedCount++;
-            } else {
-              // Try to update if student already exists
+            if (existingStudent) {
+              // Update existing student
               const updateResponse = await fetch('/api/students', {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json'
                 },
+                body: JSON.stringify({
+                  ...studentData,
+                  id: existingStudent.id
+                })
+              });
+              
+              if (updateResponse.ok) {
+                updatedCount++;
+              }
+            } else {
+              // Create new student
+              const saveResponse = await fetch('/api/students', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(studentData)
               });
-              if (updateResponse.ok) {
+              
+              if (saveResponse.ok) {
                 savedCount++;
               }
             }
           } catch (error) {
-            console.error('Error saving student:', studentData.firstName, studentData.lastName, error);
+            console.error('Error saving/updating student:', studentData.firstName, studentData.lastName, error);
           }
         }
         
@@ -147,7 +212,7 @@ export default function StudentsPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastSyncTime', syncTime);
         }
-        alert(`Successfully synced ${savedCount} students from Google Sheets to database!`);
+        alert(`Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
       } else {
         throw new Error(data.error || 'Failed to sync with Google Sheets');
       }
@@ -170,14 +235,14 @@ export default function StudentsPage() {
   const exportToCSV = () => {
     const headers = [
       'First Name', 'Last Name', 'Email', 'Phone', 'Date of Birth', 
-      'Grade', 'Address', 'Parent Name', 'Parent Phone', 'Enrollment Date', 'Student ID', 'Status'
+      'Age', 'Address', 'Emergency Contact', 'Contact Number', 'Enrollment Date', 'Student ID', 'Status'
     ];
     
     const csvContent = [
       headers.join(','),
       ...students.map(student => [
         student.firstName, student.lastName, student.email, student.phone,
-        student.dateOfBirth, student.grade, student.address, student.parentName,
+        student.dateOfBirth, student.age, student.address, student.parentName,
         student.parentPhone, student.enrollmentDate, student.studentId, student.status
       ].map(field => `"${field}"`).join(','))
     ].join('\n');
@@ -260,21 +325,62 @@ export default function StudentsPage() {
           </div>
         </div>
 
+        {/* Select All Option */}
+        {filteredStudents.length > 0 && (
+          <div className="mb-4">
+            <label className="flex items-center gap-2 text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedStudents.length === filteredStudents.length}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <span className="font-medium">
+                Select All ({filteredStudents.length} students)
+              </span>
+            </label>
+          </div>
+        )}
+
+        {/* Batch Actions */}
+        {selectedStudents.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <span className="text-blue-800 font-medium">
+                {selectedStudents.length} student{selectedStudents.length > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={handleBatchDelete}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Students Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {filteredStudents.map(student => (
             <div key={student.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedStudents.includes(student.id)}
+                    onChange={() => toggleStudentSelection(student.id)}
+                    className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                  />
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                     <User className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800">
+                    <h3 className="font-semibold text-gray-900">
                       {student.firstName} {student.lastName}
                     </h3>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-600">{student.studentId}</p>
+                      <p className="text-sm text-gray-700">{student.studentId}</p>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         student.status === 'active' 
                           ? 'bg-green-100 text-green-800' 
@@ -301,31 +407,31 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-gray-800">
                 <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  <span className="font-medium text-green-600">{student.grade}</span>
+                  <BookOpen className="h-4 w-4 text-gray-600" />
+                  <span className="font-medium text-green-600">Age: {student.age || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>{student.email}</span>
+                  <Mail className="h-4 w-4 text-gray-600" />
+                  <span className="text-gray-800">{student.email}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  <span>{student.phone}</span>
+                  <Phone className="h-4 w-4 text-gray-600" />
+                  <span className="text-gray-800">{student.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Born: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
+                  <Calendar className="h-4 w-4 text-gray-600" />
+                  <span className="text-gray-800">Date of Birth: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>Parent: {student.parentName || 'N/A'}</span>
+                  <User className="h-4 w-4 text-gray-600" />
+                  <span className="text-gray-800">Emergency Contact: {student.parentName || 'N/A'}</span>
                 </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-600">
                   Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}
                 </div>
               </div>
@@ -335,8 +441,8 @@ export default function StudentsPage() {
 
         {filteredStudents.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">No students found</div>
-            <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+            <div className="text-gray-600 text-lg mb-2">No students found</div>
+            <p className="text-gray-700">Try adjusting your search or filter criteria</p>
           </div>
         )}
 
@@ -418,7 +524,7 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
     email: student?.email || '',
     phone: student?.phone || '',
     dateOfBirth: student?.dateOfBirth || '',
-    grade: student?.grade || 'Not specified',
+    age: student?.age || '',
     address: student?.address || '',
     parentName: student?.parentName || '',
     parentPhone: student?.parentPhone || '',
@@ -508,12 +614,12 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Grade/Level</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
                 <input
-                  type="text"
-                  value={formData.grade}
-                  onChange={(e) => setFormData({...formData, grade: e.target.value})}
-                  placeholder="e.g. Grade 10, Year 11, etc."
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
+                  placeholder="e.g. 18, 22, 25"
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
@@ -531,12 +637,12 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
             </div>
           </div>
 
-          {/* Parent/Guardian Information */}
+          {/* Emergency Contact Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Parent/Guardian Information</h3>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Emergency Contact Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Parent/Guardian Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
                 <input
                   type="text"
                   value={formData.parentName}
@@ -547,7 +653,7 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Parent/Guardian Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
                 <input
                   type="tel"
                   value={formData.parentPhone}
