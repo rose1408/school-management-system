@@ -30,11 +30,11 @@ export async function POST(request: Request) {
     });
     
     return NextResponse.json({ student });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating student:', error);
     
     // Handle duplicate email
-    if (error.message && error.message.includes('email')) {
+    if (error instanceof Error && error.message && error.message.includes('email')) {
       return NextResponse.json({ 
         error: 'A student with this email already exists' 
       }, { status: 400 });
@@ -62,16 +62,16 @@ export async function PUT(request: Request) {
     });
     
     return NextResponse.json({ student });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating student:', error);
     
-    if (error.message && error.message.includes('email')) {
+    if (error instanceof Error && error.message && error.message.includes('email')) {
       return NextResponse.json({ 
         error: 'A student with this email already exists' 
       }, { status: 400 });
     }
     
-    if (error.message.includes('not found')) {
+    if (error instanceof Error && error.message.includes('not found')) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
     
@@ -94,10 +94,10 @@ export async function DELETE(request: Request) {
     });
     
     return NextResponse.json({ message: 'Student deleted successfully' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting student:', error);
     
-    if (error.message.includes('not found')) {
+    if (error instanceof Error && error.message.includes('not found')) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
     

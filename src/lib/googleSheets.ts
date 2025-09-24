@@ -41,7 +41,7 @@ export class GoogleSheetsService {
       const rows = response.data.values || [];
       
       // Skip header row and convert to student objects
-      return rows.slice(1).map((row: any[], index: number) => ({
+      return rows.slice(1).map((row: string[], index: number) => ({
         id: (index + 1).toString(),
         firstName: row[0] || '',
         lastName: row[1] || '',

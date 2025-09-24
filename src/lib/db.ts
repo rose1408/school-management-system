@@ -17,8 +17,14 @@ export interface Student {
   firstName: string
   lastName: string
   email: string
+  phone?: string
+  dateOfBirth?: string
   grade: string
+  address?: string
+  parentName?: string
+  parentPhone?: string
   enrollmentDate: string
+  studentId?: string
   status: string
   createdAt?: Timestamp
   updatedAt?: Timestamp
@@ -97,9 +103,9 @@ export const db = {
           id: where.id,
           ...data
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error updating student in Firebase:', error)
-        if (error.code === 'not-found') {
+        if (error instanceof Error && 'code' in error && error.code === 'not-found') {
           throw new Error('Student not found')
         }
         throw error
@@ -112,9 +118,9 @@ export const db = {
         await deleteDoc(docRef)
         
         return { id: where.id }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error deleting student from Firebase:', error)
-        if (error.code === 'not-found') {
+        if (error instanceof Error && 'code' in error && error.code === 'not-found') {
           throw new Error('Student not found')
         }
         throw error

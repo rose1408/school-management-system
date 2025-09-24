@@ -4,16 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, BookOpen, Download, RefreshCw, Settings } from "lucide-react";
 import { useRealtimeStudents } from "@/hooks/useRealtimeStudents";
-
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  grade: string;
-  enrollmentDate: string;
-  status: string;
-}
+import { Student } from "@/lib/db";
 
 export default function StudentsPage() {
   // Use Firebase real-time hook
@@ -149,8 +140,7 @@ export default function StudentsPage() {
           }
         }
         
-        // Reload students from database
-        await loadStudents();
+        // Students will automatically update via real-time listener
         
         const syncTime = new Date().toLocaleString();
         setLastSyncTime(syncTime);
@@ -397,7 +387,7 @@ export default function StudentsPage() {
               });
               
               if (response.ok) {
-                await loadStudents(); // Reload students from database
+                // Students will automatically update via real-time listener
                 setIsModalOpen(false);
               } else {
                 const data = await response.json();
@@ -443,7 +433,7 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
     // Generate student ID if creating new student
     const studentData = {
       ...formData,
-      id: student?.id || undefined, // Let database generate ID for new students
+      id: student?.id || `temp_${Date.now()}`, // Temporary ID for new students
       studentId: formData.studentId || `STU${String(Date.now()).slice(-6)}`
     };
     
@@ -700,7 +690,7 @@ function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave }: GoogleSheet
                   <tr>
                     <td className="border border-yellow-300 px-2 py-1 text-xs">Timestamp</td>
                     <td className="border border-yellow-300 px-2 py-1 text-xs">Student ID</td>
-                    <td className="border border-yellow-300 px-2 py-1 text-xs">Student's Full Name</td>
+                    <td className="border border-yellow-300 px-2 py-1 text-xs">Student&apos;s Full Name</td>
                     <td className="border border-yellow-300 px-2 py-1 text-xs">Date of Birth</td>
                     <td className="border border-yellow-300 px-2 py-1 text-xs">Age</td>
                     <td className="border border-yellow-300 px-2 py-1 text-xs">Emergency Contact</td>

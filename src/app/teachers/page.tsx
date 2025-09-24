@@ -781,7 +781,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
         <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">{teacher.name}'s Schedule</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{teacher.name}&apos;s Schedule</h2>
               <p className="text-gray-600">Weekly music lesson schedule</p>
             </div>
             <div className="flex items-center gap-3">
@@ -814,6 +814,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
                     <p className="text-sm text-blue-600">{schedule.instrument} - {schedule.level}</p>
                   </div>
                   <div className="flex gap-1">
+                    {/* TODO: Implement lesson completion functionality
                     <button
                       onClick={() => incrementLessonNumber(schedule.id)}
                       className="p-1 hover:bg-green-100 rounded"
@@ -822,6 +823,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
                     >
                       <Plus className="h-4 w-4 text-green-600" />
                     </button>
+                    */}
                     <button
                       onClick={() => onEdit(schedule)}
                       className="p-1 hover:bg-blue-100 rounded"
@@ -866,6 +868,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
                   {!schedule.isActive && (
                     <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                       <strong>Card Expired!</strong> Please renew to continue lessons.
+                      {/* TODO: Implement card renewal functionality
                       <button
                         onClick={() => {
                           const newCardNumber = prompt('Enter new card number:');
@@ -877,6 +880,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
                       >
                         Renew Card
                       </button>
+                      */}
                     </div>
                   )}
                   <div className="text-orange-600 font-medium">

@@ -55,11 +55,11 @@ export async function GET(request: Request) {
             studentId = '',
             fullName = '',
             dateOfBirth = '',
-            age = '',
+            // age = '', // Not used
             emergencyContact = '',
             emailAddress = '',
             contactNumber = '',
-            socialMediaConsent = '',
+            // socialMediaConsent = '', // Not used
             status = '',
             referralSource = '',
             referralDetails = ''
