@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 
+// Google Sheets Integration - READ ONLY
+// This API only READS data from Google Sheets and imports it to the local database.
+// It NEVER modifies, deletes, or writes back to Google Sheets.
+// Your Google Sheets data is completely safe from any app operations.
+
 // For a simpler approach, we'll use the public CSV export feature
 // This works with any public Google Sheet
 export async function GET(request: Request) {

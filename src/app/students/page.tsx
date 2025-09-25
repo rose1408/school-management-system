@@ -74,7 +74,7 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (confirm("Are you sure you want to delete this student record?")) {
+    if (confirm("Are you sure you want to delete this student record?\n\nNote: This will only remove the student from your app database. Your Google Sheets data will remain completely untouched and safe.")) {
       try {
         const response = await fetch(`/api/students?id=${id}`, {
           method: 'DELETE'
@@ -101,7 +101,7 @@ export default function StudentsPage() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedStudents.length} selected students?`)) {
+    if (!confirm(`Are you sure you want to delete ${selectedStudents.length} selected students?\n\nNote: This will only remove the students from your app database. Your Google Sheets data will remain completely untouched and safe.`)) {
       return;
     }
 
@@ -275,6 +275,20 @@ export default function StudentsPage() {
               )}
             </div>
           </div>
+
+          {/* Data Safety Notice */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-xs font-bold">i</span>
+              </div>
+              <div className="text-sm text-blue-800">
+                <strong>Data Safety:</strong> Any delete operations only affect your app database. 
+                Your Google Sheets data remains completely safe and untouched.
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsGoogleSheetsModalOpen(true)}
