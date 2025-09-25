@@ -27,7 +27,7 @@ export function useRealtimeStudents() {
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
-            grade: data.grade,
+            age: data.age,
             enrollmentDate: data.enrollmentDate,
             status: data.status,
             createdAt: data.createdAt,

@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        grade: data.grade || 'Not specified',
+        age: data.age || '',
         enrollmentDate: data.enrollmentDate,
         status: data.status || 'active'
       }
@@ -55,7 +55,7 @@ export async function PUT(request: Request) {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        grade: data.grade || 'Not specified',
+        age: data.age || '',
         enrollmentDate: data.enrollmentDate,
         status: data.status || 'active'
       }

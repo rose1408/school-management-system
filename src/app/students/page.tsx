@@ -42,7 +42,7 @@ export default function StudentsPage() {
     const autoSyncInterval = setInterval(() => {
       if (savedSheetId.trim()) {
         console.log('Auto-syncing with Google Sheets...');
-        syncWithGoogleSheets();
+        syncWithGoogleSheets(false); // Don't show alert for auto-sync
       }
     }, 5 * 60 * 1000); // Auto-sync every 5 minutes
     
@@ -143,10 +143,12 @@ export default function StudentsPage() {
   };
 
   // Google Sheets integration functions
-  const syncWithGoogleSheets = async () => {
+  const syncWithGoogleSheets = async (showAlert = true) => {
     if (!googleSheetId.trim()) {
-      alert('Please configure your Google Sheet ID first');
-      setIsGoogleSheetsModalOpen(true);
+      if (showAlert) {
+        alert('Please configure your Google Sheet ID first');
+        setIsGoogleSheetsModalOpen(true);
+      }
       return;
     }
 
@@ -282,7 +284,7 @@ export default function StudentsPage() {
               Configure Sheets
             </button>
             <button
-              onClick={syncWithGoogleSheets}
+              onClick={() => syncWithGoogleSheets(true)}
               disabled={isLoading}
               className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
