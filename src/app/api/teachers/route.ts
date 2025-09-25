@@ -22,8 +22,13 @@ export async function POST(request: Request) {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        callName: data.callName || '',
+        dateOfBirth: data.dateOfBirth || '',
         email: data.email,
         phone: data.phone || '',
+        address: data.address || '',
+        zipCode: data.zipCode || '',
+        tinNumber: data.tinNumber || '',
         subject: data.subject || '',
         currentLesson: data.currentLesson || 1,
         maxLessons: data.maxLessons || 20,
@@ -32,6 +37,43 @@ export async function POST(request: Request) {
         notes: data.notes || ''
       }
     });
+
+    // Sync with Google Sheets TEACHER tab (if configured)
+    try {
+      const googleSheetId = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
+      if (googleSheetId) {
+        // Prepare data for Google Sheets with correct column mapping
+        const teacherDataForSheets = {
+          callName: data.callName || '',
+          firstName: data.firstName,
+          lastName: data.lastName,
+          dateOfBirth: data.dateOfBirth || '',
+          phone: data.phone || '',
+          email: data.email,
+          address: data.address || '',
+          zipCode: data.zipCode || '',
+          tinNumber: data.tinNumber || ''
+        };
+        
+        // Log for debugging
+        console.log('Syncing new teacher to Google Sheets TEACHER tab:', teacherDataForSheets);
+        
+        // Call Google Sheets API to add teacher
+        await fetch('/api/teachers/google-sheets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sheetId: googleSheetId,
+            teacherData: teacherDataForSheets
+          })
+        });
+      }
+    } catch (sheetsError) {
+      console.error('Google Sheets sync error (non-blocking):', sheetsError);
+      // Don't fail the teacher creation if sheets sync fails
+    }
     
     return NextResponse.json({ teacher });
   } catch (error) {
@@ -58,8 +100,13 @@ export async function PUT(request: Request) {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        callName: data.callName || '',
+        dateOfBirth: data.dateOfBirth || '',
         email: data.email,
         phone: data.phone || '',
+        address: data.address || '',
+        zipCode: data.zipCode || '',
+        tinNumber: data.tinNumber || '',
         subject: data.subject || '',
         currentLesson: data.currentLesson || 1,
         maxLessons: data.maxLessons || 20,

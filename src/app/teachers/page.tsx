@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Filter, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Filter, Mail, Phone, Printer } from "lucide-react";
 import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
 import { Teacher } from "@/lib/db";
 
@@ -522,7 +522,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${teacher.name}'s Schedule</title>
+        <title>{teacher.firstName} {teacher.lastName}'s Schedule</title>
         <style>
           body { 
             font-family: Arial, sans-serif; 
@@ -586,7 +586,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
       </head>
       <body>
         <div class="header">
-          <h1>${teacher.name}'s Schedule</h1>
+          <h1>{teacher.firstName} {teacher.lastName}'s Schedule</h1>
           <div>Music Teacher Schedule</div>
         </div>
         <div class="date-range">
@@ -655,7 +655,7 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
         <div className="p-6 border-b border-gray-200 sticky top-0 bg-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">{teacher.name}&apos;s Schedule</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{teacher.firstName} {teacher.lastName}&apos;s Schedule</h2>
               <p className="text-gray-600">Weekly music lesson schedule</p>
             </div>
             <div className="flex items-center gap-3">
@@ -813,10 +813,10 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
         <div className="p-6 border-t border-gray-200 bg-gray-50">
           <h4 className="text-sm font-semibold text-gray-700 mb-2">Instrument Colors:</h4>
           <div className="flex flex-wrap gap-3 text-xs">
-            {teacher.instruments.map(instrument => (
-              <div key={instrument} className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded ${getInstrumentColor(instrument)}`}></div>
-                <span className="text-gray-600">{instrument}</span>
+            {teacher.subject && teacher.subject.split(',').map((instrument: string) => (
+              <div key={instrument.trim()} className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded ${getInstrumentColor(instrument.trim())}`}></div>
+                <span className="text-gray-600">{instrument.trim()}</span>
               </div>
             ))}
           </div>
@@ -913,8 +913,13 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
   const [formData, setFormData] = useState<Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>>({
     firstName: teacher?.firstName || '',
     lastName: teacher?.lastName || '',
+    callName: teacher?.callName || '',
+    dateOfBirth: teacher?.dateOfBirth || '',
     email: teacher?.email || '',
     phone: teacher?.phone || '',
+    address: teacher?.address || '',
+    zipCode: teacher?.zipCode || '',
+    tinNumber: teacher?.tinNumber || '',
     subject: teacher?.subject || '',
     currentLesson: teacher?.currentLesson || 1,
     maxLessons: teacher?.maxLessons || 20,
@@ -923,9 +928,27 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
     notes: teacher?.notes || ''
   });
 
+  // Separate state for full name input
+  const [fullName, setFullName] = useState(() => {
+    if (teacher) {
+      return `${teacher.firstName} ${teacher.lastName}`.trim();
+    }
+    return '';
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Parse full name into first and last name
+    const nameParts = fullName.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    onSave({
+      ...formData,
+      firstName,
+      lastName
+    });
   };
 
   return (
@@ -938,29 +961,30 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
               <input
                 type="text"
-                value={formData.firstName}
-                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter full name (e.g., John Doe)"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher's Call Name</label>
               <input
                 type="text"
-                value={formData.lastName}
-                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                value={formData.callName}
+                onChange={(e) => setFormData({...formData, callName: e.target.value})}
+                placeholder="Preferred name for students to use"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
-                required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
               <input
                 type="email"
                 value={formData.email}
@@ -971,7 +995,17 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+              <input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
               <input
                 type="tel"
                 value={formData.phone}
@@ -981,12 +1015,45 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject/Instrument</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject/Instruments</label>
               <input
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                placeholder="e.g., Piano, Guitar, Violin"
+                placeholder="Add instruments separated by commas"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+              <input
+                type="text"
+                value={formData.address}
+                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                placeholder="Complete address"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Zip Code</label>
+              <input
+                type="text"
+                value={formData.zipCode}
+                onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
+                placeholder="Postal/ZIP code"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">TIN #</label>
+              <input
+                type="text"
+                value={formData.tinNumber}
+                onChange={(e) => setFormData({...formData, tinNumber: e.target.value})}
+                placeholder="Tax Identification Number"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
               />
             </div>
@@ -1127,7 +1194,7 @@ function ScheduleModal({ schedule, teachers, days, onClose, onSave }: ScheduleMo
                 required
               >
                 {teachers.map(teacher => (
-                  <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
+                  <option key={teacher.id} value={teacher.id}>{teacher.firstName} {teacher.lastName}</option>
                 ))}
               </select>
             </div>
@@ -1141,8 +1208,8 @@ function ScheduleModal({ schedule, teachers, days, onClose, onSave }: ScheduleMo
                 required
               >
                 <option value="">Select Instrument</option>
-                {selectedTeacher?.instruments.map(instrument => (
-                  <option key={instrument} value={instrument}>{instrument}</option>
+                {selectedTeacher?.subject && selectedTeacher.subject.split(',').map((instrument: string) => (
+                  <option key={instrument.trim()} value={instrument.trim()}>{instrument.trim()}</option>
                 ))}
               </select>
             </div>

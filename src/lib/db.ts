@@ -34,8 +34,13 @@ export interface Teacher {
   id: string
   firstName: string
   lastName: string
+  callName?: string // Teacher's Call Name
+  dateOfBirth?: string
   email: string
-  phone?: string
+  phone?: string // Contact Number  
+  address?: string
+  zipCode?: string
+  tinNumber?: string // Tin #
   subject?: string
   currentLesson?: number
   maxLessons?: number
@@ -167,8 +172,13 @@ export const db = {
             id: doc.id,
             firstName: data.firstName,
             lastName: data.lastName,
+            callName: data.callName,
+            dateOfBirth: data.dateOfBirth,
             email: data.email,
             phone: data.phone,
+            address: data.address,
+            zipCode: data.zipCode,
+            tinNumber: data.tinNumber,
             subject: data.subject,
             currentLesson: data.currentLesson,
             maxLessons: data.maxLessons,
