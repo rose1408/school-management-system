@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, BookOpen, RefreshCw, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, BookOpen, RefreshCw, Settings } from "lucide-react";
 import { useRealtimeStudents } from "@/hooks/useRealtimeStudents";
 import { Student } from "@/lib/db";
 
@@ -25,7 +25,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function StudentsPage() {
   // Use Firebase real-time hook
-  const { students: realtimeStudents, loading: realtimeLoading, error: realtimeError } = useRealtimeStudents();
+  const { students: realtimeStudents } = useRealtimeStudents();
   
   const [students, setStudents] = useState<Student[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,7 +103,7 @@ export default function StudentsPage() {
         console.log('Cleared auto-sync interval');
       }
     };
-  }, [googleSheetId, syncWithGoogleSheets]); // Include dependencies
+  }, [googleSheetId]); // Remove syncWithGoogleSheets dependency to avoid circular reference
 
   // Remove the old loadStudents function since we're using real-time data
   
@@ -385,13 +385,13 @@ export default function StudentsPage() {
         // Check for students that might have been removed from Google Sheets
         // (Optional: mark them as inactive rather than deleting)
         let inactiveCount = 0;
-        const googleSheetEmails = data.students.map((s: any) => s.email?.toLowerCase()).filter(Boolean);
-        const googleSheetStudentIds = data.students.map((s: any) => s.studentId).filter(Boolean);
+        const googleSheetEmails = data.students.map((s: Student) => s.email?.toLowerCase()).filter(Boolean);
+        const googleSheetStudentIds = data.students.map((s: Student) => s.studentId).filter(Boolean);
         
         for (const existingStudent of currentStudents) {
           const stillExists = googleSheetEmails.includes(existingStudent.email?.toLowerCase()) ||
                              googleSheetStudentIds.includes(existingStudent.studentId) ||
-                             data.students.some((gs: any) => 
+                             data.students.some((gs: Student) => 
                                gs.firstName?.toLowerCase() === existingStudent.firstName?.toLowerCase() && 
                                gs.lastName?.toLowerCase() === existingStudent.lastName?.toLowerCase()
                              );

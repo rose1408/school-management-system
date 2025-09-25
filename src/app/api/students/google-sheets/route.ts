@@ -79,7 +79,7 @@ export async function GET(request: Request) {
             emergencyContact = '', // Column F - Person to notify in Case of Emergency
             emailAddress = '',   // Column G - Email Address
             contactNumber = '',  // Column H - Contact Number
-            socialMediaConsent = '',
+            , // socialMediaConsent - unused
             status = '',
             referralSource = '',
             referralDetails = ''

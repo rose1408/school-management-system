@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileText, Check, Download, Users, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle, FileText, Download, Check, Clock } from "lucide-react";
 
 interface Signature {
   id: string;

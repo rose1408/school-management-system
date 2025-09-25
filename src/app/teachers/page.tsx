@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Filter, Mail, Phone, Printer } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Mail, Phone, Printer } from "lucide-react";
 import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
 import { Teacher } from "@/lib/db";
 
@@ -27,7 +27,6 @@ export default function TeachersPage() {
   // Use Firebase real-time hook for teachers
   const { teachers: realtimeTeachers, loading: realtimeLoading, error: realtimeError } = useRealtimeTeachers();
   
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   
@@ -65,13 +64,6 @@ export default function TeachersPage() {
       isActive: true
     },
   ]);
-
-  // Update local state when real-time data changes
-  useState(() => {
-    if (realtimeTeachers.length > 0) {
-      setTeachers(realtimeTeachers);
-    }
-  });
 
   // Helper function for modals
   const showModal = useCallback((
@@ -973,7 +965,7 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher's Call Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teacher&apos;s Call Name</label>
               <input
                 type="text"
                 value={formData.callName}
