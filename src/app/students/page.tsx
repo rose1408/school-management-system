@@ -82,20 +82,28 @@ export default function StudentsPage() {
     const savedSyncTime = localStorage.getItem('lastSyncTime');
     setGoogleSheetId(savedSheetId);
     setLastSyncTime(savedSyncTime);
+  }, []);
+
+  // Set up auto-sync with proper dependencies
+  useEffect(() => {
+    let autoSyncInterval: NodeJS.Timeout | null = null;
     
-    // Set up auto-sync if Google Sheets is configured
-    const autoSyncInterval = setInterval(() => {
-      if (savedSheetId.trim()) {
+    if (googleSheetId.trim()) {
+      console.log('Setting up auto-sync for Google Sheet:', googleSheetId);
+      autoSyncInterval = setInterval(() => {
         console.log('Auto-syncing with Google Sheets...');
         syncWithGoogleSheets(false); // Don't show alert for auto-sync
-      }
-    }, 5 * 60 * 1000); // Auto-sync every 5 minutes
+      }, 5 * 60 * 1000); // Auto-sync every 5 minutes
+    }
     
-    // Cleanup intervals on component unmount
+    // Cleanup interval on component unmount or when googleSheetId changes
     return () => {
-      clearInterval(autoSyncInterval);
+      if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+        console.log('Cleared auto-sync interval');
+      }
     };
-  }, []);
+  }, [googleSheetId, syncWithGoogleSheets]); // Include dependencies
 
   // Remove the old loadStudents function since we're using real-time data
   
@@ -245,7 +253,7 @@ export default function StudentsPage() {
   }, [selectedStudents.length, filteredStudents]);
 
   // Google Sheets integration functions
-  const syncWithGoogleSheets = async (showAlert = true) => {
+  const syncWithGoogleSheets = useCallback(async (showAlert = true) => {
     if (!googleSheetId.trim()) {
       if (showAlert) {
         showModal('warning', 'Configuration Required', 'Please configure your Google Sheet ID first.');
@@ -261,20 +269,45 @@ export default function StudentsPage() {
       const data = await response.json();
 
       if (response.ok && data.students) {
+        console.log('Fetched', data.students.length, 'students from Google Sheets');
+        
+        // Get the most current students list from the real-time hook
+        const currentStudents = realtimeStudents;
+        console.log('Current students in app:', currentStudents.length);
+        
         // Save/update each student in database
         let savedCount = 0;
         let updatedCount = 0;
         
         for (const studentData of data.students) {
           try {
-            // First, check if student exists by email or studentId
-            const existingStudent = students.find(s => 
-              s.email === studentData.email || 
-              s.studentId === studentData.studentId ||
-              (s.firstName === studentData.firstName && s.lastName === studentData.lastName)
-            );
+            console.log('Processing student from Google Sheets:', studentData.firstName, studentData.lastName, studentData.email);
+            
+            // Check if student exists by email, studentId, or name combination
+            // More flexible matching - prioritize email and studentId over name matching
+            let existingStudent = null;
+            
+            // First try email match (most reliable)
+            if (studentData.email && studentData.email.trim()) {
+              existingStudent = currentStudents.find(s => s.email && s.email.toLowerCase() === studentData.email.toLowerCase());
+            }
+            
+            // If no email match, try studentId
+            if (!existingStudent && studentData.studentId && studentData.studentId.trim()) {
+              existingStudent = currentStudents.find(s => s.studentId && s.studentId === studentData.studentId);
+            }
+            
+            // Only use name matching as last resort and be more strict
+            if (!existingStudent && studentData.firstName && studentData.lastName) {
+              existingStudent = currentStudents.find(s => 
+                s.firstName && s.lastName &&
+                s.firstName.toLowerCase().trim() === studentData.firstName.toLowerCase().trim() && 
+                s.lastName.toLowerCase().trim() === studentData.lastName.toLowerCase().trim()
+              );
+            }
             
             if (existingStudent) {
+              console.log('Found existing student, updating:', existingStudent.id);
               // Update existing student
               const updateResponse = await fetch('/api/students', {
                 method: 'PUT',
@@ -289,9 +322,19 @@ export default function StudentsPage() {
               
               if (updateResponse.ok) {
                 updatedCount++;
+                console.log('Successfully updated student:', studentData.firstName, studentData.lastName);
+              } else {
+                const errorData = await updateResponse.text();
+                console.error('Failed to update student:', studentData.firstName, studentData.lastName, errorData);
               }
             } else {
-              // Create new student
+              console.log('No existing student found, creating new student:', studentData.firstName, studentData.lastName);
+              // Create new student - ensure we have required fields
+              if (!studentData.firstName || !studentData.lastName || !studentData.email) {
+                console.warn('Skipping student with missing required fields:', studentData);
+                continue;
+              }
+              
               const saveResponse = await fetch('/api/students', {
                 method: 'POST',
                 headers: {
@@ -302,10 +345,78 @@ export default function StudentsPage() {
               
               if (saveResponse.ok) {
                 savedCount++;
+                console.log('Successfully created new student:', studentData.firstName, studentData.lastName);
+              } else {
+                const errorData = await saveResponse.text();
+                console.error('Failed to create student:', studentData.firstName, studentData.lastName, errorData);
+                
+                // If it's a duplicate email error, try to find and update instead
+                if (errorData.includes('email') || errorData.includes('duplicate')) {
+                  console.log('Duplicate detected, trying to update existing record...');
+                  const duplicateStudent = currentStudents.find(s => 
+                    s.email && studentData.email && s.email.toLowerCase() === studentData.email.toLowerCase()
+                  );
+                  
+                  if (duplicateStudent) {
+                    const retryUpdateResponse = await fetch('/api/students', {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        ...studentData,
+                        id: duplicateStudent.id
+                      })
+                    });
+                    
+                    if (retryUpdateResponse.ok) {
+                      updatedCount++;
+                      console.log('Successfully updated duplicate student:', studentData.firstName, studentData.lastName);
+                    }
+                  }
+                }
               }
             }
           } catch (error) {
-            console.error('Error saving/updating student:', studentData.firstName, studentData.lastName, error);
+            console.error('Error processing student:', studentData.firstName, studentData.lastName, error);
+          }
+        }
+        
+        // Check for students that might have been removed from Google Sheets
+        // (Optional: mark them as inactive rather than deleting)
+        let inactiveCount = 0;
+        const googleSheetEmails = data.students.map((s: any) => s.email?.toLowerCase()).filter(Boolean);
+        const googleSheetStudentIds = data.students.map((s: any) => s.studentId).filter(Boolean);
+        
+        for (const existingStudent of currentStudents) {
+          const stillExists = googleSheetEmails.includes(existingStudent.email?.toLowerCase()) ||
+                             googleSheetStudentIds.includes(existingStudent.studentId) ||
+                             data.students.some((gs: any) => 
+                               gs.firstName?.toLowerCase() === existingStudent.firstName?.toLowerCase() && 
+                               gs.lastName?.toLowerCase() === existingStudent.lastName?.toLowerCase()
+                             );
+          
+          if (!stillExists && existingStudent.status === 'active') {
+            // Student no longer in Google Sheets, mark as inactive
+            try {
+              const inactiveResponse = await fetch('/api/students', {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  ...existingStudent,
+                  status: 'inactive'
+                })
+              });
+              
+              if (inactiveResponse.ok) {
+                inactiveCount++;
+                console.log('Marked student as inactive (not found in Google Sheets):', existingStudent.firstName, existingStudent.lastName);
+              }
+            } catch (error) {
+              console.error('Error marking student as inactive:', existingStudent.firstName, existingStudent.lastName, error);
+            }
           }
         }
         
@@ -316,8 +427,24 @@ export default function StudentsPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastSyncTime', syncTime);
         }
+        
+        console.log('Sync completed:', {
+          totalFromGoogleSheets: data.students.length,
+          newStudentsAdded: savedCount,
+          existingStudentsUpdated: updatedCount,
+          studentsMarkedInactive: inactiveCount
+        });
+        
         if (showAlert) {
-          showModal('success', 'Sync Successful', `Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
+          let message = `Successfully synced ${data.students.length} records from Google Sheets!\n\n`;
+          message += `• Added: ${savedCount} new students\n`;
+          message += `• Updated: ${updatedCount} existing students\n`;
+          if (inactiveCount > 0) {
+            message += `• Marked as inactive: ${inactiveCount} students (no longer in sheet)\n`;
+          }
+          message += `\nSync completed at ${syncTime}`;
+          
+          showModal('success', 'Comprehensive Sync Complete', message);
         }
       } else {
         throw new Error(data.error || 'Failed to sync with Google Sheets');
@@ -330,7 +457,7 @@ export default function StudentsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [googleSheetId, realtimeStudents, showModal]); // Updated dependencies to use realtimeStudents
 
   const saveGoogleSheetId = (sheetId: string) => {
     setGoogleSheetId(sheetId);
