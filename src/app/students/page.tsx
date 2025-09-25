@@ -262,193 +262,256 @@ export default function StudentsPage() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-white/20 rounded-lg transition-colors">
-              <ArrowLeft className="h-6 w-6 text-green-600" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Student Information System</h1>
-              <p className="text-gray-600">Manage student records and sync with Google Sheets</p>
-              {isClient && lastSyncTime && (
-                <p className="text-sm text-green-600">Last synced: {lastSyncTime}</p>
-              )}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8 rounded-2xl shadow-xl mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="p-3 hover:bg-white/20 rounded-xl transition-all duration-200">
+                <ArrowLeft className="h-6 w-6 text-white" />
+              </Link>
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <User className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Student Information System</h1>
+                <p className="text-blue-100 text-lg mt-1">Manage student records and sync with Google Sheets</p>
+                {isClient && lastSyncTime && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-green-200 text-sm">Last synced: {lastSyncTime}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsGoogleSheetsModalOpen(true)}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/30"
+              >
+                <Settings className="h-5 w-5" />
+                Configure Sheets
+              </button>
+              <button
+                onClick={() => syncWithGoogleSheets(true)}
+                disabled={isLoading}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                ) : (
+                  <RefreshCw className="h-5 w-5" />
+                )}
+                {isLoading ? 'Syncing...' : 'Sync from Sheets'}
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Download className="h-5 w-5" />
+                Export CSV
+              </button>
+              <button
+                onClick={handleAddStudent}
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="h-5 w-5" />
+                Add Student
+              </button>
             </div>
           </div>
 
-          {/* Data Safety Notice */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-white text-xs font-bold">i</span>
+          {/* Data Safety Notice - Moved inside header with better styling */}
+          <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-bold">ℹ</span>
               </div>
-              <div className="text-sm text-blue-800">
-                <strong>Data Safety:</strong> Any delete operations only affect your app database. 
+              <div className="text-blue-100">
+                <strong className="text-white">Data Safety:</strong> Any delete operations only affect your app database. 
                 Your Google Sheets data remains completely safe and untouched.
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsGoogleSheetsModalOpen(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Settings className="h-4 w-4" />
-              Configure Sheets
-            </button>
-            <button
-              onClick={() => syncWithGoogleSheets(true)}
-              disabled={isLoading}
-              className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? (
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              {isLoading ? 'Syncing...' : 'Sync from Sheets'}
-            </button>
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </button>
-            <button
-              onClick={handleAddStudent}
-              className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Plus className="h-5 w-5" />
-              Add Student
-            </button>
-          </div>
         </div>
 
-        {/* Search */}
-        <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+        {/* Search and Filters */}
+        <div className="bg-white rounded-2xl p-6 shadow-xl mb-8 border border-gray-100">
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
               <input
                 type="text"
                 placeholder="Search by name, student ID, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
+            </div>
+            
+            {/* Statistics */}
+            <div className="flex items-center gap-6 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span>Total: {students.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span>Filtered: {filteredStudents.length}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Select All Option */}
+        {/* Select All and Batch Actions */}
         {filteredStudents.length > 0 && (
-          <div className="mb-4">
-            <label className="flex items-center gap-2 text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedStudents.length === filteredStudents.length}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-              />
-              <span className="font-medium">
-                Select All ({filteredStudents.length} students)
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* Batch Actions */}
-        {selectedStudents.length > 0 && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <span className="text-blue-800 font-medium">
-                {selectedStudents.length} student{selectedStudents.length > 1 ? 's' : ''} selected
-              </span>
-              <button
-                onClick={handleBatchDelete}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Selected
-              </button>
+          <div className="bg-white rounded-2xl p-6 shadow-xl mb-6 border border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-3 text-gray-700 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={selectedStudents.length === filteredStudents.length}
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-colors"
+                  />
+                  <span className="font-medium group-hover:text-blue-600 transition-colors">
+                    Select All ({filteredStudents.length} students)
+                  </span>
+                </label>
+                {selectedStudents.length > 0 && (
+                  <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    {selectedStudents.length} selected
+                  </div>
+                )}
+              </div>
+              
+              {selectedStudents.length > 0 && (
+                <button
+                  onClick={handleBatchDelete}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <Trash2 className="h-5 w-5" />
+                  Delete Selected ({selectedStudents.length})
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* Students Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
           {filteredStudents.map(student => (
-            <div key={student.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedStudents.includes(student.id)}
-                    onChange={() => toggleStudentSelection(student.id)}
-                    className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-                  />
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-green-600" />
+            <div key={student.id} className="group bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden">
+              {/* Card Header with Checkbox */}
+              <div className="p-6 pb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedStudents.includes(student.id)}
+                      onChange={() => toggleStudentSelection(student.id)}
+                      className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-colors mt-1"
+                    />
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <User className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                        {student.firstName} {student.lastName}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm text-gray-600 font-medium">ID: {student.studentId}</p>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          student.status === 'active' 
+                            ? 'bg-green-100 text-green-800 border border-green-200' 
+                            : 'bg-red-100 text-red-800 border border-red-200'
+                        }`}>
+                          {student.status}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {student.firstName} {student.lastName}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm text-gray-700">{student.studentId}</p>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        student.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {student.status}
-                      </span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={() => handleEditStudent(student)}
+                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Edit Student"
+                    >
+                      <Edit className="h-4 w-4 text-blue-600" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteStudent(student.id)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Student"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Student Details */}
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Age</span>
+                      <p className="font-semibold text-gray-900">{student.age || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-gray-600">Email</span>
+                      <p className="font-medium text-gray-900 truncate">{student.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Phone className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Phone</span>
+                      <p className="font-medium text-gray-900">{student.phone}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date of Birth</span>
+                      <p className="font-medium text-gray-900">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                      <User className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-gray-600">Emergency Contact</span>
+                      <p className="font-medium text-gray-900 truncate">{student.parentName || 'Not specified'}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleEditStudent(student)}
-                    className="p-1 hover:bg-green-100 rounded"
-                  >
-                    <Edit className="h-4 w-4 text-green-600" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteStudent(student.id)}
-                    className="p-1 hover:bg-red-100 rounded"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </button>
-                </div>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-800">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-gray-600" />
-                  <span className="font-medium text-green-600">Age: {student.age || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-800">{student.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-800">{student.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-800">Date of Birth: {student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-800">Emergency Contact: {student.parentName || 'N/A'}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-600">
-                  Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}
+              {/* Card Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span>Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -456,29 +519,57 @@ export default function StudentsPage() {
         </div>
 
         {filteredStudents.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-600 text-lg mb-2">No students found</div>
-            <p className="text-gray-700">Try adjusting your search or filter criteria</p>
+          <div className="text-center py-16">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+              <User className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No students found</h3>
+            <p className="text-gray-600 mb-6">Try adjusting your search criteria or add new students</p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              <Plus className="h-5 w-5" />
+              Add First Student
+            </button>
           </div>
         )}
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-green-600 mb-2">{students.length}</div>
-            <div className="text-gray-600">Total Students</div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center border border-blue-200 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <User className="h-6 w-6 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-blue-600 mb-1">{students.length}</div>
+            <div className="text-blue-700 font-medium">Total Students</div>
           </div>
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 text-center border border-green-200 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <BookOpen className="h-6 w-6 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-green-600 mb-1">
               {students.filter(s => s.status === "active").length}
             </div>
-            <div className="text-gray-600">Active Students</div>
+            <div className="text-green-700 font-medium">Active Students</div>
           </div>
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-red-600 mb-2">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 text-center border border-purple-200 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-purple-600 mb-1">
               {students.filter(s => s.status === "inactive").length}
             </div>
-            <div className="text-gray-600">Inactive Students</div>
+            <div className="text-purple-700 font-medium">Inactive Students</div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 text-center border border-orange-200 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <RefreshCw className="h-6 w-6 text-white" />
+            </div>
+            <div className="text-3xl font-bold text-orange-600 mb-1">
+              {filteredStudents.length}
+            </div>
+            <div className="text-orange-700 font-medium">Filtered Results</div>
           </div>
         </div>
       </div>
