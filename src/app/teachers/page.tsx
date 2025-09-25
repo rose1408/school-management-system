@@ -566,10 +566,26 @@ export default function TeachersPage() {
 }
 
 // Schedule Modal Component
+interface ScheduleData {
+  teacherId: string;
+  teacherName: string;
+  studentName: string;
+  studentCardNumber: string;
+  instrument: string;
+  level: string;
+  day: string;
+  time: string;
+  duration: string;
+  lessonNumber: string;
+  room?: string;
+  isActive?: boolean;
+  startDate: string;
+}
+
 interface ScheduleModalProps {
   teachers: Teacher[];
   onClose: () => void;
-  onSave: (schedule: any) => void;
+  onSave: (schedule: ScheduleData) => void;
 }
 
 function ScheduleModal({ teachers, onClose, onSave }: ScheduleModalProps) {
