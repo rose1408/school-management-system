@@ -22,19 +22,10 @@ export async function POST(request: Request) {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        callName: data.callName || '',
-        dateOfBirth: data.dateOfBirth || '',
         email: data.email,
-        phone: data.phone || '',
-        address: data.address || '',
-        zipCode: data.zipCode || '',
-        tinNumber: data.tinNumber || '',
-        subject: data.subject || '',
-        currentLesson: data.currentLesson || 1,
-        maxLessons: data.maxLessons || 20,
-        cardNumber: data.cardNumber || '',
-        lessonPlan: data.lessonPlan || '',
-        notes: data.notes || ''
+        phone: data.phone,
+        instrument: data.instrument,
+        address: data.address
       }
     });
 
@@ -44,15 +35,12 @@ export async function POST(request: Request) {
       if (googleSheetId) {
         // Prepare data for Google Sheets with correct column mapping
         const teacherDataForSheets = {
-          callName: data.callName || '',
           firstName: data.firstName,
           lastName: data.lastName,
-          dateOfBirth: data.dateOfBirth || '',
-          phone: data.phone || '',
           email: data.email,
-          address: data.address || '',
-          zipCode: data.zipCode || '',
-          tinNumber: data.tinNumber || ''
+          phone: data.phone,
+          instrument: data.instrument,
+          address: data.address
         };
         
         // Log for debugging
@@ -100,19 +88,10 @@ export async function PUT(request: Request) {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        callName: data.callName || '',
-        dateOfBirth: data.dateOfBirth || '',
         email: data.email,
-        phone: data.phone || '',
-        address: data.address || '',
-        zipCode: data.zipCode || '',
-        tinNumber: data.tinNumber || '',
-        subject: data.subject || '',
-        currentLesson: data.currentLesson || 1,
-        maxLessons: data.maxLessons || 20,
-        cardNumber: data.cardNumber || '',
-        lessonPlan: data.lessonPlan || '',
-        notes: data.notes || ''
+        phone: data.phone,
+        instrument: data.instrument,
+        address: data.address
       }
     });
     

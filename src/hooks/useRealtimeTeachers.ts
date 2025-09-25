@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Teacher } from '@/lib/db'
@@ -9,6 +9,11 @@ export function useRealtimeTeachers() {
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const refreshTeachers = useCallback(() => {
+    setLoading(true)
+    setError(null)
+  }, [])
 
   useEffect(() => {
     const q = query(
@@ -26,19 +31,10 @@ export function useRealtimeTeachers() {
             id: doc.id,
             firstName: data.firstName,
             lastName: data.lastName,
-            callName: data.callName,
-            dateOfBirth: data.dateOfBirth,
             email: data.email,
             phone: data.phone,
+            instrument: data.instrument,
             address: data.address,
-            zipCode: data.zipCode,
-            tinNumber: data.tinNumber,
-            subject: data.subject,
-            currentLesson: data.currentLesson,
-            maxLessons: data.maxLessons,
-            cardNumber: data.cardNumber,
-            lessonPlan: data.lessonPlan,
-            notes: data.notes,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt
           })
@@ -58,5 +54,5 @@ export function useRealtimeTeachers() {
     return () => unsubscribe()
   }, [])
 
-  return { teachers, loading, error }
+  return { teachers, loading, error, refreshTeachers }
 }
