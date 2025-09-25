@@ -1,10 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, BookOpen, Download, RefreshCw, Settings } from "lucide-react";
 import { useRealtimeStudents } from "@/hooks/useRealtimeStudents";
 import { Student } from "@/lib/db";
+
+// Custom hook for debounced search
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function StudentsPage() {
   // Use Firebase real-time hook
@@ -16,6 +33,13 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  
+  // Pagination states for performance
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20); // Show 20 students per page
+  
+  // Debounced search term to prevent excessive filtering
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
   // Google Sheets integration states
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
@@ -30,6 +54,11 @@ export default function StudentsPage() {
       setStudents(realtimeStudents);
     }
   }, [realtimeStudents]);
+
+  // Reset pagination when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
 
   // Handle client-side hydration and load Google Sheets config
   useEffect(() => {
@@ -55,26 +84,51 @@ export default function StudentsPage() {
 
   // Remove the old loadStudents function since we're using real-time data
   
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = 
-      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase());
+  // Optimized filtering with memoization and debouncing
+  const filteredStudents = useMemo(() => {
+    if (!debouncedSearchTerm.trim()) return students;
     
-    return matchesSearch;
-  });
+    const searchLower = debouncedSearchTerm.toLowerCase();
+    return students.filter(student => {
+      return (
+        student.firstName.toLowerCase().includes(searchLower) ||
+        student.lastName.toLowerCase().includes(searchLower) ||
+        student.email.toLowerCase().includes(searchLower) ||
+        (student.phone && student.phone.includes(debouncedSearchTerm)) ||
+        (student.age && student.age.toString().includes(debouncedSearchTerm))
+      );
+    });
+  }, [students, debouncedSearchTerm]);
 
-  const handleAddStudent = () => {
+  // Paginated students for better performance
+  const paginatedStudents = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredStudents.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredStudents, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  // Statistics calculations with memoization
+  const studentStats = useMemo(() => {
+    const total = students.length;
+    const active = students.filter(s => s.status === "active" || !s.status).length;
+    const filtered = filteredStudents.length;
+    return { total, active, filtered };
+  }, [students, filteredStudents]);
+
+  // Optimized callback functions with useCallback
+  const handleAddStudent = useCallback(() => {
     setEditingStudent(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEditStudent = (student: Student) => {
+  const handleEditStudent = useCallback((student: Student) => {
     setEditingStudent(student);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteStudent = async (id: string) => {
+  const handleDeleteStudent = useCallback(async (id: string) => {
     if (confirm("Are you sure you want to delete this student record?\n\nNote: This will only remove the student from your app database. Your Google Sheets data will remain completely untouched and safe.")) {
       try {
         const response = await fetch(`/api/students?id=${id}`, {
@@ -93,20 +147,20 @@ export default function StudentsPage() {
         alert('Failed to delete student');
       }
     }
-  };
+  }, []);
 
-  // Batch delete function
-  const handleBatchDelete = async () => {
+  // Batch delete function with useCallback
+  const handleBatchDelete = useCallback(async () => {
     if (selectedStudents.length === 0) {
       alert('Please select students to delete');
       return;
     }
 
     setIsDeleteConfirmOpen(true);
-  };
+  }, [selectedStudents]);
 
-  // Confirm and execute batch delete
-  const confirmBatchDelete = async () => {
+  // Confirm and execute batch delete with useCallback
+  const confirmBatchDelete = useCallback(async () => {
     setIsDeleteConfirmOpen(false);
     
     try {
@@ -126,25 +180,25 @@ export default function StudentsPage() {
       console.error('Error deleting students:', error);
       alert('Failed to delete students');
     }
-  };
+  }, [selectedStudents]);
 
-  // Toggle student selection
-  const toggleStudentSelection = (studentId: string) => {
+  // Toggle student selection with useCallback
+  const toggleStudentSelection = useCallback((studentId: string) => {
     setSelectedStudents(prev => 
       prev.includes(studentId) 
         ? prev.filter(id => id !== studentId)
         : [...prev, studentId]
     );
-  };
+  }, []);
 
-  // Select all students
-  const toggleSelectAll = () => {
+  // Select all students with useCallback  
+  const toggleSelectAll = useCallback(() => {
     if (selectedStudents.length === filteredStudents.length) {
       setSelectedStudents([]);
     } else {
       setSelectedStudents(filteredStudents.map(s => s.id));
     }
-  };
+  }, [selectedStudents.length, filteredStudents]);
 
   // Google Sheets integration functions
   const syncWithGoogleSheets = async (showAlert = true) => {
@@ -363,7 +417,7 @@ export default function StudentsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Filtered: {filteredStudents.length}</span>
+                <span>Filtered: {studentStats.filtered}</span>
               </div>
             </div>
           </div>
@@ -405,9 +459,9 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* Students Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
-          {filteredStudents.map(student => (
+        {/* Students Grid - Using Paginated Students for Performance */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+          {paginatedStudents.map(student => (
             <div key={student.id} className="group bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden">
               {/* Card Header with Checkbox */}
               <div className="p-4 pb-3">
@@ -521,6 +575,66 @@ export default function StudentsPage() {
           ))}
         </div>
 
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
+            <div className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of{' '}
+              {filteredStudents.length} students
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {[...Array(Math.min(5, totalPages))].map((_, index) => {
+                  const pageNum = currentPage <= 3 
+                    ? index + 1 
+                    : currentPage + index - 2;
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-blue-500 text-white shadow-md'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <span className="px-2 text-gray-400">...</span>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
         {filteredStudents.length === 0 && (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
@@ -544,7 +658,7 @@ export default function StudentsPage() {
             <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mx-auto mb-3">
               <User className="h-6 w-6 text-white" />
             </div>
-            <div className="text-3xl font-bold text-blue-600 mb-1">{students.length}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-1">{studentStats.total}</div>
             <div className="text-blue-700 font-medium">Total Students</div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 text-center border border-green-200 hover:shadow-lg transition-shadow">
@@ -552,7 +666,7 @@ export default function StudentsPage() {
               <BookOpen className="h-6 w-6 text-white" />
             </div>
             <div className="text-3xl font-bold text-green-600 mb-1">
-              {students.filter(s => s.status === "active").length}
+              {studentStats.active}
             </div>
             <div className="text-green-700 font-medium">Active Students</div>
           </div>
@@ -561,9 +675,9 @@ export default function StudentsPage() {
               <Calendar className="h-6 w-6 text-white" />
             </div>
             <div className="text-3xl font-bold text-purple-600 mb-1">
-              {students.filter(s => s.status === "inactive").length}
+              {studentStats.filtered}
             </div>
-            <div className="text-purple-700 font-medium">Inactive Students</div>
+            <div className="text-purple-700 font-medium">Filtered Results</div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 text-center border border-orange-200 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
