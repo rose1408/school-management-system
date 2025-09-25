@@ -15,6 +15,7 @@ export default function StudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
   // Google Sheets integration states
   const [isGoogleSheetsModalOpen, setIsGoogleSheetsModalOpen] = useState(false);
@@ -101,10 +102,13 @@ export default function StudentsPage() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedStudents.length} selected students?\n\nNote: This will only remove the students from your app database. Your Google Sheets data will remain completely untouched and safe.`)) {
-      return;
-    }
+    setIsDeleteConfirmOpen(true);
+  };
 
+  // Confirm and execute batch delete
+  const confirmBatchDelete = async () => {
+    setIsDeleteConfirmOpen(false);
+    
     try {
       for (const studentId of selectedStudents) {
         const response = await fetch(`/api/students?id=${studentId}`, {
@@ -611,6 +615,76 @@ export default function StudentsPage() {
             }
           }}
         />
+      )}
+
+      {/* Modern Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop with blur and fade animation */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            onClick={() => setIsDeleteConfirmOpen(false)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full transform transition-all duration-300 ease-out scale-100 animate-in slide-in-from-bottom-4">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-t-2xl p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Trash2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Delete Students</h3>
+                  <p className="text-red-100 text-sm">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-gray-700 text-base mb-4">
+                Are you sure you want to delete{' '}
+                <span className="font-semibold text-red-600">
+                  {selectedStudents.length}
+                </span>{' '}
+                selected {selectedStudents.length === 1 ? 'student' : 'students'}?
+              </p>
+              
+              {/* Safety Notice with modern design */}
+              <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Settings className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-emerald-800 mb-1">Data Safety Notice</p>
+                    <p className="text-xs text-emerald-700 leading-relaxed">
+                      This will only remove students from your app database. Your Google Sheets data 
+                      will remain completely untouched and safe.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with modern buttons */}
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBatchDelete}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-xl font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+              >
+                Delete Now
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
