@@ -34,6 +34,21 @@ export default function StudentsPage() {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
+  // Modern modal states
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'confirm';
+    title: string;
+    message: string;
+    confirmAction?: () => void;
+    singleStudentId?: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+  
   // Pagination states for performance
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20); // Show 20 students per page
@@ -109,6 +124,29 @@ export default function StudentsPage() {
   // Calculate total pages
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
+  // Modern modal helper functions
+  const showModal = useCallback((type: 'success' | 'error' | 'warning' | 'confirm', title: string, message: string, confirmAction?: () => void, singleStudentId?: string) => {
+    setModalState({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmAction,
+      singleStudentId
+    });
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const handleModalConfirm = useCallback(() => {
+    if (modalState.confirmAction) {
+      modalState.confirmAction();
+    }
+    closeModal();
+  }, [modalState.confirmAction, closeModal]);
+
   // Statistics calculations with memoization
   const studentStats = useMemo(() => {
     const total = students.length;
@@ -129,35 +167,40 @@ export default function StudentsPage() {
   }, []);
 
   const handleDeleteStudent = useCallback(async (id: string) => {
-    if (confirm("Are you sure you want to delete this student record?\n\nNote: This will only remove the student from your app database. Your Google Sheets data will remain completely untouched and safe.")) {
-      try {
-        const response = await fetch(`/api/students?id=${id}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          // Real-time updates will automatically refresh the list
-          console.log('Student deleted successfully');
-        } else {
-          const data = await response.json();
-          alert('Failed to delete student: ' + (data.error || 'Unknown error'));
+    showModal(
+      'confirm',
+      'Delete Student',
+      'Are you sure you want to delete this student record? This action cannot be undone.',
+      async () => {
+        try {
+          const response = await fetch(`/api/students?id=${id}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            // Real-time updates will automatically refresh the list
+            showModal('success', 'Student Deleted', 'Student record has been successfully deleted from your database.');
+          } else {
+            const data = await response.json();
+            showModal('error', 'Delete Failed', data.error || 'Failed to delete student. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error deleting student:', error);
+          showModal('error', 'Delete Failed', 'An error occurred while deleting the student. Please try again.');
         }
-      } catch (error) {
-        console.error('Error deleting student:', error);
-        alert('Failed to delete student');
       }
-    }
-  }, []);
+    );
+  }, [showModal]);
 
   // Batch delete function with useCallback
   const handleBatchDelete = useCallback(async () => {
     if (selectedStudents.length === 0) {
-      alert('Please select students to delete');
+      showModal('warning', 'No Selection', 'Please select students to delete first.');
       return;
     }
 
     setIsDeleteConfirmOpen(true);
-  }, [selectedStudents]);
+  }, [selectedStudents, showModal]);
 
   // Confirm and execute batch delete with useCallback
   const confirmBatchDelete = useCallback(async () => {
@@ -175,12 +218,12 @@ export default function StudentsPage() {
       }
       
       setSelectedStudents([]);
-      alert(`Successfully deleted ${selectedStudents.length} students!`);
+      showModal('success', 'Batch Delete Successful', `Successfully deleted ${selectedStudents.length} students from your database!`);
     } catch (error) {
       console.error('Error deleting students:', error);
-      alert('Failed to delete students');
+      showModal('error', 'Batch Delete Failed', 'An error occurred while deleting students. Please try again.');
     }
-  }, [selectedStudents]);
+  }, [selectedStudents, showModal]);
 
   // Toggle student selection with useCallback
   const toggleStudentSelection = useCallback((studentId: string) => {
@@ -204,7 +247,7 @@ export default function StudentsPage() {
   const syncWithGoogleSheets = async (showAlert = true) => {
     if (!googleSheetId.trim()) {
       if (showAlert) {
-        alert('Please configure your Google Sheet ID first');
+        showModal('warning', 'Configuration Required', 'Please configure your Google Sheet ID first.');
         setIsGoogleSheetsModalOpen(true);
       }
       return;
@@ -272,13 +315,13 @@ export default function StudentsPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastSyncTime', syncTime);
         }
-        alert(`Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
+        showModal('success', 'Sync Successful', `Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
       } else {
         throw new Error(data.error || 'Failed to sync with Google Sheets');
       }
     } catch (error) {
       console.error('Sync error:', error);
-      alert('Failed to sync with Google Sheets. Please check your Sheet ID and make sure the sheet is publicly accessible.');
+      showModal('error', 'Sync Failed', 'Failed to sync with Google Sheets. Please check your Sheet ID and make sure the sheet is publicly accessible.');
     } finally {
       setIsLoading(false);
     }
@@ -697,6 +740,7 @@ export default function StudentsPage() {
           googleSheetId={googleSheetId}
           onClose={() => setIsGoogleSheetsModalOpen(false)}
           onSave={saveGoogleSheetId}
+          showModal={showModal}
         />
       )}
 
@@ -719,16 +763,115 @@ export default function StudentsPage() {
               if (response.ok) {
                 // Students will automatically update via real-time listener
                 setIsModalOpen(false);
+                showModal('success', 'Student Saved', `Student ${editingStudent ? 'updated' : 'added'} successfully!`);
               } else {
                 const data = await response.json();
-                alert('Failed to save student: ' + (data.error || 'Unknown error'));
+                showModal('error', 'Save Failed', data.error || 'Failed to save student. Please try again.');
               }
             } catch (error) {
               console.error('Error saving student:', error);
-              alert('Failed to save student');
+              showModal('error', 'Save Failed', 'An error occurred while saving the student. Please try again.');
             }
           }}
         />
+      )}
+
+      {/* Universal Modern Modal */}
+      {modalState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop with blur and fade animation */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            onClick={closeModal}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full transform transition-all duration-300 ease-out scale-100 animate-in slide-in-from-bottom-4">
+            {/* Header with gradient based on type */}
+            <div className={`rounded-t-2xl p-6 text-white ${
+              modalState.type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+              modalState.type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-500' :
+              modalState.type === 'warning' ? 'bg-gradient-to-r from-orange-500 to-yellow-500' :
+              'bg-gradient-to-r from-blue-500 to-purple-500'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  {modalState.type === 'success' && <BookOpen className="h-6 w-6 text-white" />}
+                  {modalState.type === 'error' && <Trash2 className="h-6 w-6 text-white" />}
+                  {modalState.type === 'warning' && <Settings className="h-6 w-6 text-white" />}
+                  {modalState.type === 'confirm' && <Trash2 className="h-6 w-6 text-white" />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">{modalState.title}</h3>
+                  <p className={`text-sm ${
+                    modalState.type === 'success' ? 'text-green-100' :
+                    modalState.type === 'error' ? 'text-red-100' :
+                    modalState.type === 'warning' ? 'text-orange-100' :
+                    'text-blue-100'
+                  }`}>
+                    {modalState.type === 'confirm' ? 'This action cannot be undone' : 'Status update'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <p className="text-gray-700 text-base mb-4">
+                {modalState.message}
+              </p>
+              
+              {/* Data Safety Notice for delete actions */}
+              {modalState.type === 'confirm' && (
+                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Settings className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-emerald-800 mb-1">Data Safety Notice</p>
+                      <p className="text-xs text-emerald-700 leading-relaxed">
+                        This will only remove data from your app database. Your Google Sheets data 
+                        will remain completely untouched and safe.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer with modern buttons */}
+            <div className="px-6 pb-6 flex gap-3">
+              {modalState.type === 'confirm' ? (
+                <>
+                  <button
+                    onClick={closeModal}
+                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleModalConfirm}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-xl font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"
+                  >
+                    Confirm
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={closeModal}
+                  className={`w-full px-4 py-3 rounded-xl font-medium transition-all duration-200 ease-out hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl text-white ${
+                    modalState.type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' :
+                    modalState.type === 'error' ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600' :
+                    'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600'
+                  }`}
+                >
+                  OK
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modern Delete Confirmation Modal */}
@@ -1013,15 +1156,16 @@ interface GoogleSheetsConfigModalProps {
   googleSheetId: string;
   onClose: () => void;
   onSave: (sheetId: string) => void;
+  showModal: (type: 'success' | 'error' | 'warning' | 'confirm', title: string, message: string) => void;
 }
 
-function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave }: GoogleSheetsConfigModalProps) {
+function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave, showModal }: GoogleSheetsConfigModalProps) {
   const [sheetId, setSheetId] = useState(googleSheetId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sheetId.trim()) {
-      alert('Please enter a valid Google Sheet ID');
+      showModal('warning', 'Invalid Input', 'Please enter a valid Google Sheet ID.');
       return;
     }
     onSave(sheetId.trim());
