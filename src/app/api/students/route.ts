@@ -23,8 +23,14 @@ export async function POST(request: Request) {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
+        phone: data.phone || '',
+        dateOfBirth: data.dateOfBirth || '',
         age: data.age || '',
+        address: data.address || '',
+        parentName: data.parentName || '',
+        parentPhone: data.parentPhone || '',
         enrollmentDate: data.enrollmentDate,
+        studentId: data.studentId || '',
         status: data.status || 'active'
       }
     });
@@ -55,8 +61,14 @@ export async function PUT(request: Request) {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
+        phone: data.phone || '',
+        dateOfBirth: data.dateOfBirth || '',
         age: data.age || '',
+        address: data.address || '',
+        parentName: data.parentName || '',
+        parentPhone: data.parentPhone || '',
         enrollmentDate: data.enrollmentDate,
+        studentId: data.studentId || '',
         status: data.status || 'active'
       }
     });

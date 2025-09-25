@@ -39,13 +39,14 @@ export async function GET(request: Request) {
       }
 
       const csvData = await response.text();
-      console.log('Raw CSV data preview:', csvData.substring(0, 200));
+      console.log('Raw CSV data preview:', csvData.substring(0, 400));
       
       // Parse CSV data
       const lines = csvData.split('\n');
       const headers = lines[0].split(',').map(header => header.replace(/"/g, '').trim());
       
       console.log('Headers found:', headers);
+      console.log('Number of columns:', headers.length);
       console.log('Processing', lines.length - 1, 'data rows');
       
       const students = [];
@@ -53,6 +54,8 @@ export async function GET(request: Request) {
       for (let i = 1; i < lines.length; i++) {
         if (lines[i].trim()) {
           const values = parseCSVLine(lines[i]);
+          
+          console.log(`Row ${i} parsed values (${values.length} columns):`, values);
           
           // Column mapping for ENROLLMENT sheet (FIXED MAPPING):
           // 0: Timestamp
@@ -81,6 +84,15 @@ export async function GET(request: Request) {
             referralSource = '',
             referralDetails = ''
           ] = values;
+
+          console.log(`Row ${i} extracted data:`, {
+            fullName,
+            dateOfBirth,
+            age,
+            emergencyContact,
+            emailAddress,
+            contactNumber
+          });
 
           // Skip empty rows
           if (!fullName.trim() && !studentId.trim()) continue;
@@ -135,6 +147,14 @@ export async function GET(request: Request) {
             studentId: studentId.trim() || `STU${String(i).padStart(3, '0')}`,
             status: studentStatus
           };
+          
+          console.log('Final student object for', student.firstName, student.lastName, ':', {
+            email: student.email,
+            phone: student.phone,
+            dateOfBirth: student.dateOfBirth,
+            age: student.age,
+            parentName: student.parentName
+          });
           
           console.log('Processed student:', student.firstName, student.lastName, 'Status:', student.status);
           

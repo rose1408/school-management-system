@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, BookOpen, Download, RefreshCw, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, BookOpen, RefreshCw, Settings } from "lucide-react";
 import { useRealtimeStudents } from "@/hooks/useRealtimeStudents";
 import { Student } from "@/lib/db";
 
@@ -340,30 +340,6 @@ export default function StudentsPage() {
     setIsGoogleSheetsModalOpen(false);
   };
 
-  const exportToCSV = () => {
-    const headers = [
-      'First Name', 'Last Name', 'Email', 'Phone', 'Date of Birth', 
-      'Age', 'Address', 'Emergency Contact', 'Contact Number', 'Enrollment Date', 'Student ID', 'Status'
-    ];
-    
-    const csvContent = [
-      headers.join(','),
-      ...students.map(student => [
-        student.firstName, student.lastName, student.email, student.phone,
-        student.dateOfBirth, student.age, student.address, student.parentName,
-        student.parentPhone, student.enrollmentDate, student.studentId, student.status
-      ].map(field => `"${field}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `students-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
       <div className="container mx-auto px-4 py-8">
@@ -408,13 +384,6 @@ export default function StudentsPage() {
                   <RefreshCw className="h-4 w-4" />
                 )}
                 {isLoading ? 'Syncing...' : 'Sync from Sheets'}
-              </button>
-              <button
-                onClick={exportToCSV}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
-              >
-                <Download className="h-4 w-4" />
-                Export CSV
               </button>
               <button
                 onClick={handleAddStudent}
