@@ -151,8 +151,9 @@ export default function StudentsPage() {
   const studentStats = useMemo(() => {
     const total = students.length;
     const active = students.filter(s => s.status === "active" || !s.status).length;
+    const inactive = students.filter(s => s.status === "inactive").length;
     const filtered = filteredStudents.length;
-    return { total, active, filtered };
+    return { total, active, inactive, filtered };
   }, [students, filteredStudents]);
 
   // Optimized callback functions with useCallback
@@ -315,13 +316,17 @@ export default function StudentsPage() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('lastSyncTime', syncTime);
         }
-        showModal('success', 'Sync Successful', `Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
+        if (showAlert) {
+          showModal('success', 'Sync Successful', `Successfully synced - Added: ${savedCount}, Updated: ${updatedCount} students from Google Sheets!`);
+        }
       } else {
         throw new Error(data.error || 'Failed to sync with Google Sheets');
       }
     } catch (error) {
       console.error('Sync error:', error);
-      showModal('error', 'Sync Failed', 'Failed to sync with Google Sheets. Please check your Sheet ID and make sure the sheet is publicly accessible.');
+      if (showAlert) {
+        showModal('error', 'Sync Failed', 'Failed to sync with Google Sheets. Please check your Sheet ID and make sure the sheet is publicly accessible.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -718,9 +723,9 @@ export default function StudentsPage() {
               <Calendar className="h-6 w-6 text-white" />
             </div>
             <div className="text-3xl font-bold text-purple-600 mb-1">
-              {studentStats.filtered}
+              {studentStats.inactive}
             </div>
-            <div className="text-purple-700 font-medium">Filtered Results</div>
+            <div className="text-purple-700 font-medium">Inactive Students</div>
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 text-center border border-orange-200 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">

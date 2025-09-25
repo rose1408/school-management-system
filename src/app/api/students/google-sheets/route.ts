@@ -54,15 +54,15 @@ export async function GET(request: Request) {
         if (lines[i].trim()) {
           const values = parseCSVLine(lines[i]);
           
-          // Column mapping for ENROLLMENT sheet:
+          // Column mapping for ENROLLMENT sheet (FIXED MAPPING):
           // 0: Timestamp
           // 1: Student ID  
           // 2: Student's Full Name
-          // 3: Date of Birth
-          // 4: Age
-          // 5: Person to notify in Case of Emergency
-          // 6: Email Address
-          // 7: Contact Number
+          // 3: Date of Birth (Column D)
+          // 4: Age (Column E)
+          // 5: Person to notify in Case of Emergency (Column F)
+          // 6: Email Address (Column G)
+          // 7: Contact Number (Column H)
           // 8: Social Media Consent
           // 9: Status
           // 10: Referral Source
@@ -71,12 +71,12 @@ export async function GET(request: Request) {
             timestamp = '',
             studentId = '',
             fullName = '',
-            dateOfBirth = '',
-            age = '', // Age column (not used in processing but needed for alignment)
-            emergencyContact = '',
-            emailAddress = '',
-            contactNumber = '',
-            socialMediaConsent = '', // Social Media Consent (not used in processing but needed for alignment)
+            dateOfBirth = '',    // Column D - Date of Birth
+            age = '',            // Column E - Age 
+            emergencyContact = '', // Column F - Person to notify in Case of Emergency
+            emailAddress = '',   // Column G - Email Address
+            contactNumber = '',  // Column H - Contact Number
+            socialMediaConsent = '',
             status = '',
             referralSource = '',
             referralDetails = ''
@@ -119,17 +119,17 @@ export async function GET(request: Request) {
           const normalizedStatus = status.trim().toLowerCase();
           const studentStatus = (normalizedStatus === 'inactive' || normalizedStatus === 'suspended' || normalizedStatus === 'withdrawn') ? 'inactive' : 'active';
           
-          // Create student object with correct field mapping
+          // Create student object with CORRECT field mapping
           const student = {
             id: studentId.trim() || `STU${String(i).padStart(3, '0')}`,
             firstName: firstName,
             lastName: lastName,
-            email: emailAddress.trim(),
-            phone: contactNumber.trim(), // Contact Number from sheet
-            dateOfBirth: dateOfBirth.trim(), // Date of Birth from sheet
-            grade: age.trim() || 'Not specified', // Use Age instead of grade
+            email: emailAddress.trim(),        // Column G - Email Address
+            phone: contactNumber.trim(),       // Column H - Contact Number 
+            dateOfBirth: dateOfBirth.trim(),   // Column D - Date of Birth
+            age: age.trim() || 'Not specified', // Column E - Age
             address: [referralSource.trim(), referralDetails.trim()].filter(Boolean).join(' - ') || 'Not specified',
-            parentName: emergencyContact.trim(), // Person to notify in Case of Emergency
+            parentName: emergencyContact.trim(), // Column F - Person to notify in Case of Emergency
             parentPhone: '', // Not available as separate field
             enrollmentDate: enrollmentDate,
             studentId: studentId.trim() || `STU${String(i).padStart(3, '0')}`,
