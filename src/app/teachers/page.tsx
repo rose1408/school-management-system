@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Filter, Printer } from "lucide-react";
-
-interface Teacher {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  instruments: string[];
-  employeeId: string;
-}
+import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, BookOpen, Calendar, Filter, Mail, Phone } from "lucide-react";
+import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
+import { Teacher } from "@/lib/db";
 
 interface TeacherSchedule {
   id: string;
@@ -31,37 +24,33 @@ interface TeacherSchedule {
 }
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState<Teacher[]>([
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      email: "sarah.johnson@school.com",
-      phone: "(555) 123-4567",
-      instruments: ["Piano", "Guitar", "Violin"],
-      employeeId: "TCH001"
-    },
-    {
-      id: "2",
-      name: "Ms. Emily Chen",
-      email: "emily.chen@school.com",
-      phone: "(555) 234-5678",
-      instruments: ["Flute", "Saxophone", "Clarinet"],
-      employeeId: "TCH002"
-    },
-    {
-      id: "3",
-      name: "Dr. Michael Brown",
-      email: "michael.brown@school.com",
-      phone: "(555) 345-6789",
-      instruments: ["Drums", "Bass Guitar", "Percussion"],
-      employeeId: "TCH003"
-    }
-  ]);
+  // Use Firebase real-time hook for teachers
+  const { teachers: realtimeTeachers, loading: realtimeLoading, error: realtimeError } = useRealtimeTeachers();
+  
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  
+  // Modern modal states
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'warning' | 'confirm';
+    title: string;
+    message: string;
+    confirmAction?: () => void;
+    singleTeacherId?: string;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
 
-  const [schedules, setSchedules] = useState<TeacherSchedule[]>([
+  // Demo schedules for now - this would eventually come from a schedules API
+  const [schedules] = useState<TeacherSchedule[]>([
     {
       id: "1",
-      teacherId: "1",
+      teacherId: "demo-1",
       studentName: "Emma Johnson",
       instrument: "Piano",
       level: "Intermediate",
@@ -75,215 +64,111 @@ export default function TeachersPage() {
       startDate: "2025-09-01",
       isActive: true
     },
-    {
-      id: "2",
-      teacherId: "1",
-      studentName: "Alex Smith",
-      instrument: "Guitar",
-      level: "Advance",
-      room: "Music Room 2",
-      time: "11:00",
-      day: "Monday",
-      duration: "60 min",
-      cardNumber: "CARD-002",
-      currentLessonNumber: 7,
-      maxLessons: 10,
-      startDate: "2025-09-15",
-      isActive: true
-    },
-    {
-      id: "3",
-      teacherId: "2",
-      studentName: "Sophie Chen",
-      instrument: "Flute",
-      level: "Primary",
-      room: "Music Room 3",
-      time: "10:00",
-      day: "Tuesday",
-      duration: "45 min",
-      cardNumber: "CARD-003",
-      currentLessonNumber: 1,
-      maxLessons: 10,
-      startDate: "2025-09-20",
-      isActive: true
-    },
-    {
-      id: "4",
-      teacherId: "2",
-      studentName: "Michael Brown",
-      instrument: "Saxophone",
-      level: "Intermediate",
-      room: "Music Room 1",
-      time: "14:00",
-      day: "Wednesday",
-      duration: "60 min",
-      cardNumber: "CARD-004",
-      currentLessonNumber: 9,
-      maxLessons: 10,
-      startDate: "2025-08-10",
-      isActive: true
-    },
-    {
-      id: "5",
-      teacherId: "3",
-      studentName: "Oliver Davis",
-      instrument: "Drums",
-      level: "Advance",
-      room: "Practice Room 1",
-      time: "16:00",
-      day: "Thursday",
-      duration: "60 min",
-      cardNumber: "CARD-005",
-      currentLessonNumber: 5,
-      maxLessons: 10,
-      startDate: "2025-09-05",
-      isActive: true
-    },
-    {
-      id: "6",
-      teacherId: "1",
-      studentName: "Lily Wilson",
-      instrument: "Violin",
-      level: "Primary",
-      room: "Music Room 2",
-      time: "13:00",
-      day: "Friday",
-      duration: "45 min",
-      cardNumber: "CARD-006",
-      currentLessonNumber: 2,
-      maxLessons: 10,
-      startDate: "2025-09-18",
-      isActive: true
-    },
-    {
-      id: "7",
-      teacherId: "3",
-      studentName: "James Garcia",
-      instrument: "Bass Guitar",
-      level: "Intermediate",
-      room: "Practice Room 2",
-      time: "10:00",
-      day: "Saturday",
-      duration: "60 min",
-      cardNumber: "CARD-007",
-      currentLessonNumber: 8,
-      maxLessons: 10,
-      startDate: "2025-08-25",
-      isActive: true
-    },
-    {
-      id: "8",
-      teacherId: "2",
-      studentName: "Isabella Martinez",
-      instrument: "Clarinet",
-      level: "Advance",
-      room: "Music Room 3",
-      time: "15:00",
-      day: "Sunday",
-      duration: "45 min",
-      cardNumber: "CARD-008",
-      currentLessonNumber: 6,
-      maxLessons: 10,
-      startDate: "2025-09-08",
-      isActive: true
-    }
   ]);
 
-  const [selectedTeacher, setSelectedTeacher] = useState<string>("all");
-  const [selectedDay, setSelectedDay] = useState<string>("all");
-  const [viewingTeacherSchedule, setViewingTeacherSchedule] = useState<string | null>(null);
-  const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [editingSchedule, setEditingSchedule] = useState<TeacherSchedule | null>(null);
+  // Update local state when real-time data changes
+  useState(() => {
+    if (realtimeTeachers.length > 0) {
+      setTeachers(realtimeTeachers);
+    }
+  });
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-
-  const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find(t => t.id === teacherId);
-    return teacher ? teacher.name : "Unknown Teacher";
-  };
-
-  const getTeacherSchedule = (teacherId: string, day?: string) => {
-    return schedules.filter(schedule => {
-      const matchesTeacher = teacherId === "all" || schedule.teacherId === teacherId;
-      const matchesDay = !day || day === "all" || schedule.day === day;
-      return matchesTeacher && matchesDay;
+  // Helper function for modals
+  const showModal = useCallback((
+    type: 'success' | 'error' | 'warning' | 'confirm', 
+    title: string, 
+    message: string, 
+    confirmAction?: () => void,
+    singleTeacherId?: string
+  ) => {
+    setModalState({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmAction,
+      singleTeacherId
     });
-  };
+  }, []);
 
-  const filteredSchedules = getTeacherSchedule(selectedTeacher, selectedDay);
+  const closeModal = useCallback(() => {
+    setModalState({
+      isOpen: false,
+      type: 'success',
+      title: '',
+      message: ''
+    });
+  }, []);
 
-  // Function to increment lesson number and handle card completion
-  const incrementLessonNumber = (scheduleId: string) => {
-    setSchedules(prev => prev.map(schedule => {
-      if (schedule.id === scheduleId) {
-        const newLessonNumber = schedule.currentLessonNumber + 1;
-        
-        if (newLessonNumber > schedule.maxLessons) {
-          // Mark schedule as inactive when lessons are completed
-          return { ...schedule, isActive: false };
-        }
-        
-        return { ...schedule, currentLessonNumber: newLessonNumber };
-      }
-      return schedule;
-    }));
-  };
-
-  // Function to renew card with new card number
-  const renewCard = (scheduleId: string, newCardNumber: string) => {
-    setSchedules(prev => prev.map(schedule => {
-      if (schedule.id === scheduleId) {
-        return {
-          ...schedule,
-          cardNumber: newCardNumber,
-          currentLessonNumber: 1,
-          isActive: true,
-          startDate: new Date().toISOString().split('T')[0]
-        };
-      }
-      return schedule;
-    }));
-  };
-
-  // Function to get active schedules only
-  const getActiveSchedules = () => {
-    return schedules.filter(schedule => schedule.isActive);
-  };
-
-  const handleAddTeacher = () => {
+  const handleAddTeacher = useCallback(() => {
     setEditingTeacher(null);
-    setIsTeacherModalOpen(true);
-  };
+    setIsModalOpen(true);
+  }, []);
 
-  const handleEditTeacher = (teacher: Teacher) => {
+  const handleEditTeacher = useCallback((teacher: Teacher) => {
     setEditingTeacher(teacher);
-    setIsTeacherModalOpen(true);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleDeleteTeacher = useCallback((id: string) => {
+    const teacher = realtimeTeachers.find(t => t.id === id);
+    const teacherName = teacher ? `${teacher.firstName} ${teacher.lastName}` : 'this teacher';
+    
+    showModal(
+      'confirm', 
+      'Delete Teacher', 
+      `Are you sure you want to delete ${teacherName}? This action cannot be undone.`,
+      async () => {
+        try {
+          const response = await fetch(`/api/teachers?id=${id}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            showModal('success', 'Teacher Deleted', `${teacherName} has been successfully deleted.`);
+          } else {
+            throw new Error('Failed to delete teacher');
+          }
+        } catch (error) {
+          console.error('Error deleting teacher:', error);
+          showModal('error', 'Delete Failed', 'An error occurred while deleting the teacher. Please try again.');
+        }
+      },
+      id
+    );
+  }, [realtimeTeachers, showModal]);
+
+  const getTeacherSchedule = (teacherId: string) => {
+    return schedules.filter(schedule => schedule.teacherId === teacherId);
   };
 
-  const handleDeleteTeacher = (id: string) => {
-    if (confirm("Are you sure you want to delete this teacher? This will also remove all their schedules.")) {
-      setTeachers(teachers.filter(teacher => teacher.id !== id));
-      setSchedules(schedules.filter(schedule => schedule.teacherId !== id));
-    }
-  };
+  // Loading and error states
+  if (realtimeLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading teachers...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleAddSchedule = () => {
-    setEditingSchedule(null);
-    setIsScheduleModalOpen(true);
-  };
-
-  const handleEditSchedule = (schedule: TeacherSchedule) => {
-    setEditingSchedule(schedule);
-    setIsScheduleModalOpen(true);
-  };
-
-  const handleDeleteSchedule = (id: string) => {
-    if (confirm("Are you sure you want to delete this schedule entry?")) {
-      setSchedules(schedules.filter(schedule => schedule.id !== id));
-    }
-  };
+  if (realtimeError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading teachers: {realtimeError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100">
@@ -295,8 +180,8 @@ export default function TeachersPage() {
               <ArrowLeft className="h-6 w-6 text-orange-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Teachers Schedule Management</h1>
-              <p className="text-gray-600">Manage teacher profiles and their individual schedules</p>
+              <h1 className="text-3xl font-bold text-gray-800">Teachers Management</h1>
+              <p className="text-gray-600">Manage teacher profiles and their schedules</p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -307,19 +192,12 @@ export default function TeachersPage() {
               <Plus className="h-4 w-4" />
               Add Teacher
             </button>
-            <button
-              onClick={handleAddSchedule}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Calendar className="h-4 w-4" />
-              Add Schedule
-            </button>
           </div>
         </div>
 
-        {/* Teachers Overview */}
+        {/* Teachers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {teachers.map(teacher => (
+          {realtimeTeachers.map(teacher => (
             <div key={teacher.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
@@ -327,8 +205,8 @@ export default function TeachersPage() {
                     <User className="h-6 w-6 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-800">{teacher.name}</h3>
-                    <p className="text-sm text-gray-600">{teacher.employeeId}</p>
+                    <h3 className="font-semibold text-gray-800">{teacher.firstName} {teacher.lastName}</h3>
+                    <p className="text-sm text-gray-600">ID: {teacher.id.slice(-8)}</p>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -347,21 +225,54 @@ export default function TeachersPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 text-sm text-gray-600 mb-4">
+              <div className="space-y-3 text-sm text-gray-600 mb-4">
+                {/* Updated to show Instrument instead of Music Teacher */}
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4" />
-                  <span className="font-medium text-orange-600">Music Teacher</span>
+                  <span className="font-medium text-orange-600">
+                    {teacher.subject ? `${teacher.subject} Instructor` : 'Instrument Instructor'}
+                  </span>
                 </div>
-                <div className="text-xs text-gray-500">
-                  Instruments: {teacher.instruments.join(", ")}
-                </div>
+
+                {/* Contact Information */}
+                {teacher.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    <span className="text-xs text-gray-700">{teacher.email}</span>
+                  </div>
+                )}
+
+                {teacher.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-xs text-gray-700">{teacher.phone}</span>
+                  </div>
+                )}
+
+                {/* Schedule Summary */}
                 <div className="text-xs text-gray-500">
                   Classes: {getTeacherSchedule(teacher.id).length} scheduled
                 </div>
+
+                {/* Lesson Progress if available */}
+                {teacher.currentLesson && teacher.maxLessons && (
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">Progress:</span>
+                    <div className={`text-xs px-2 py-1 rounded-full ${
+                      teacher.currentLesson >= teacher.maxLessons 
+                        ? 'bg-red-100 text-red-800' 
+                        : teacher.currentLesson >= teacher.maxLessons - 2
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {teacher.currentLesson}/{teacher.maxLessons}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
-                onClick={() => setViewingTeacherSchedule(teacher.id)}
+                onClick={() => alert('Schedule view coming soon!')}
                 className="w-full px-3 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium"
               >
                 View Schedule
@@ -370,122 +281,28 @@ export default function TeachersPage() {
           ))}
         </div>
 
-        {/* Schedule Filters */}
-        <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Filters:</span>
+        {/* Empty State */}
+        {realtimeTeachers.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+              <User className="h-12 w-12 text-gray-400" />
             </div>
-            
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Teacher:</label>
-              <select
-                value={selectedTeacher}
-                onChange={(e) => setSelectedTeacher(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">All Teachers</option>
-                {teachers.map(teacher => (
-                  <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Day:</label>
-              <select
-                value={selectedDay}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">All Days</option>
-                {days.map(day => (
-                  <option key={day} value={day}>{day}</option>
-                ))}
-              </select>
-            </div>
-
-            {(selectedTeacher !== "all" || selectedDay !== "all") && (
-              <button
-                onClick={() => {
-                  setSelectedTeacher("all");
-                  setSelectedDay("all");
-                }}
-                className="text-sm text-orange-600 hover:text-orange-700 underline"
-              >
-                Clear Filters
-              </button>
-            )}
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Teachers Yet</h3>
+            <p className="text-gray-600 mb-6">Start by adding your first teacher to the system.</p>
+            <button
+              onClick={handleAddTeacher}
+              className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors mx-auto"
+            >
+              <Plus className="h-5 w-5" />
+              Add First Teacher
+            </button>
           </div>
-        </div>
-
-        {/* Schedule Display */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {selectedTeacher === "all" 
-              ? "All Teachers Schedule" 
-              : `${getTeacherName(selectedTeacher)}'s Schedule`}
-          </h2>
-
-          {filteredSchedules.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <div className="text-gray-500">No schedules found for the selected filters</div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredSchedules.map(schedule => (
-                <div key={schedule.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-800">{schedule.instrument}</h3>
-                      <p className="text-sm text-orange-600">{getTeacherName(schedule.teacherId)}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleEditSchedule(schedule)}
-                        className="p-1 hover:bg-blue-100 rounded"
-                      >
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSchedule(schedule.id)}
-                        className="p-1 hover:bg-red-100 rounded"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{schedule.day}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{schedule.time} ({schedule.duration})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{schedule.room}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      <span>{schedule.level}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-orange-600 mb-2">{teachers.length}</div>
+            <div className="text-3xl font-bold text-orange-600 mb-2">{realtimeTeachers.length}</div>
             <div className="text-gray-600">Total Teachers</div>
           </div>
           <div className="bg-white rounded-xl p-6 text-center shadow-lg">
@@ -494,71 +311,128 @@ export default function TeachersPage() {
           </div>
           <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-green-600 mb-2">
-              {new Set(schedules.map(s => s.day)).size}
+              {realtimeTeachers.filter(t => t.currentLesson && t.currentLesson <= t.maxLessons!).length}
             </div>
-            <div className="text-gray-600">Active Days</div>
+            <div className="text-gray-600">Active Teachers</div>
           </div>
           <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-purple-600 mb-2">
-              {new Set(teachers.flatMap(t => t.instruments)).size}
+              {new Set(realtimeTeachers.map(t => t.subject).filter(Boolean)).size}
             </div>
-            <div className="text-gray-600">Total Instruments</div>
+            <div className="text-gray-600">Subjects</div>
           </div>
         </div>
       </div>
 
-      {/* Detailed Teacher Schedule View */}
-      {viewingTeacherSchedule && (
-        <TeacherScheduleView
-          teacher={teachers.find(t => t.id === viewingTeacherSchedule)!}
-          schedules={schedules.filter(s => s.teacherId === viewingTeacherSchedule)}
-          onClose={() => setViewingTeacherSchedule(null)}
-          onEdit={handleEditSchedule}
-          onDelete={handleDeleteSchedule}
-        />
-      )}
-
       {/* Teacher Modal */}
-      {isTeacherModalOpen && (
+      {isModalOpen && (
         <TeacherModal
           teacher={editingTeacher}
-          onClose={() => setIsTeacherModalOpen(false)}
-          onSave={(teacher) => {
-            if (editingTeacher) {
-              setTeachers(teachers.map(t => t.id === teacher.id ? teacher : t));
-            } else {
-              const newTeacher = {
-                ...teacher,
-                id: Date.now().toString(),
-                employeeId: `TCH${String(teachers.length + 1).padStart(3, '0')}`
-              };
-              setTeachers([...teachers, newTeacher]);
+          onClose={() => setIsModalOpen(false)}
+          onSave={async (teacherData) => {
+            try {
+              if (editingTeacher) {
+                // Update existing teacher
+                const response = await fetch('/api/teachers', {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    ...teacherData,
+                    id: editingTeacher.id
+                  })
+                });
+
+                if (response.ok) {
+                  showModal('success', 'Teacher Updated', `${teacherData.firstName} ${teacherData.lastName} has been updated successfully!`);
+                } else {
+                  throw new Error('Failed to update teacher');
+                }
+              } else {
+                // Create new teacher
+                const response = await fetch('/api/teachers', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(teacherData)
+                });
+
+                if (response.ok) {
+                  showModal('success', 'Teacher Added', `${teacherData.firstName} ${teacherData.lastName} has been added successfully!`);
+                } else {
+                  const errorData = await response.json();
+                  throw new Error(errorData.error || 'Failed to add teacher');
+                }
+              }
+              setIsModalOpen(false);
+            } catch (error) {
+              console.error('Error saving teacher:', error);
+              showModal('error', 'Save Failed', error instanceof Error ? error.message : 'An error occurred while saving the teacher.');
             }
-            setIsTeacherModalOpen(false);
           }}
         />
       )}
 
-      {/* Schedule Modal */}
-      {isScheduleModalOpen && (
-        <ScheduleModal
-          schedule={editingSchedule}
-          teachers={teachers}
-          days={days}
-          onClose={() => setIsScheduleModalOpen(false)}
-          onSave={(schedule) => {
-            if (editingSchedule) {
-              setSchedules(schedules.map(s => s.id === schedule.id ? schedule : s));
-            } else {
-              const newSchedule = {
-                ...schedule,
-                id: Date.now().toString()
-              };
-              setSchedules([...schedules, newSchedule]);
-            }
-            setIsScheduleModalOpen(false);
-          }}
-        />
+      {/* Modern Modal System */}
+      {modalState.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+              modalState.type === 'success' ? 'bg-green-100' : 
+              modalState.type === 'error' ? 'bg-red-100' : 
+              modalState.type === 'warning' ? 'bg-yellow-100' : 'bg-blue-100'
+            }`}>
+              {modalState.type === 'success' && <Calendar className="h-8 w-8 text-green-600" />}
+              {modalState.type === 'error' && <User className="h-8 w-8 text-red-600" />}
+              {modalState.type === 'warning' && <BookOpen className="h-8 w-8 text-yellow-600" />}
+              {modalState.type === 'confirm' && <User className="h-8 w-8 text-blue-600" />}
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-800 text-center mb-4">
+              {modalState.title}
+            </h3>
+            
+            <p className="text-gray-600 text-center mb-8 leading-relaxed">
+              {modalState.message}
+            </p>
+            
+            <div className="flex gap-3">
+              {modalState.type === 'confirm' ? (
+                <>
+                  <button
+                    onClick={closeModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      modalState.confirmAction?.();
+                      closeModal();
+                    }}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={closeModal}
+                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                    modalState.type === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                    modalState.type === 'error' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                    modalState.type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+                    'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  OK
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1032,43 +906,26 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete }: 
 interface TeacherModalProps {
   teacher: Teacher | null;
   onClose: () => void;
-  onSave: (teacher: Teacher) => void;
+  onSave: (teacher: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>) => void;
 }
 
 function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
-  const [formData, setFormData] = useState<Omit<Teacher, 'id'>>({
-    name: teacher?.name || '',
+  const [formData, setFormData] = useState<Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>>({
+    firstName: teacher?.firstName || '',
+    lastName: teacher?.lastName || '',
     email: teacher?.email || '',
     phone: teacher?.phone || '',
-    instruments: teacher?.instruments || [],
-    employeeId: teacher?.employeeId || ''
+    subject: teacher?.subject || '',
+    currentLesson: teacher?.currentLesson || 1,
+    maxLessons: teacher?.maxLessons || 20,
+    cardNumber: teacher?.cardNumber || '',
+    lessonPlan: teacher?.lessonPlan || '',
+    notes: teacher?.notes || ''
   });
-
-  const [newInstrument, setNewInstrument] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      id: teacher?.id || Date.now().toString()
-    });
-  };
-
-  const addInstrument = () => {
-    if (newInstrument.trim() && !formData.instruments.includes(newInstrument.trim())) {
-      setFormData({
-        ...formData,
-        instruments: [...formData.instruments, newInstrument.trim()]
-      });
-      setNewInstrument('');
-    }
-  };
-
-  const removeInstrument = (instrument: string) => {
-    setFormData({
-      ...formData,
-      instruments: formData.instruments.filter(s => s !== instrument)
-    });
+    onSave(formData);
   };
 
   return (
@@ -1081,11 +938,22 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                value={formData.firstName}
+                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
                 required
               />
@@ -1109,46 +977,76 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
-                required
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject/Instrument</label>
+              <input
+                type="text"
+                value={formData.subject}
+                onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                placeholder="e.g., Piano, Guitar, Violin"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Card Number (Optional)</label>
+              <input
+                type="text"
+                value={formData.cardNumber}
+                onChange={(e) => setFormData({...formData, cardNumber: e.target.value.toUpperCase()})}
+                placeholder="CARD-XXX"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+              />
+            </div>
+
+            <div className="md:col-span-2 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Lesson</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.currentLesson}
+                  onChange={(e) => setFormData({...formData, currentLesson: parseInt(e.target.value) || 1})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Lessons</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.maxLessons}
+                  onChange={(e) => setFormData({...formData, maxLessons: parseInt(e.target.value) || 20})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+                />
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Instruments</label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={newInstrument}
-                onChange={(e) => setNewInstrument(e.target.value)}
-                placeholder="Add an instrument"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
-              />
-              <button
-                type="button"
-                onClick={addInstrument}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-              >
-                Add
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.instruments.map(instrument => (
-                <span
-                  key={instrument}
-                  className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm"
-                >
-                  {instrument}
-                  <button
-                    type="button"
-                    onClick={() => removeInstrument(instrument)}
-                    className="text-orange-600 hover:text-orange-800"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Lesson Plan (Optional)</label>
+            <textarea
+              value={formData.lessonPlan}
+              onChange={(e) => setFormData({...formData, lessonPlan: e.target.value})}
+              rows={3}
+              placeholder="Brief description of lesson plan or curriculum"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              rows={2}
+              placeholder="Additional notes about the teacher"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900 bg-white"
+            />
           </div>
 
           <div className="flex gap-4 pt-6">
