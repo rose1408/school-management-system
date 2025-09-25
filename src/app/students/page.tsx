@@ -283,52 +283,51 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setIsGoogleSheetsModalOpen(true)}
-                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/30"
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-200 border border-white/20 hover:border-white/30 text-sm"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4 w-4" />
                 Configure Sheets
               </button>
               <button
                 onClick={() => syncWithGoogleSheets(true)}
                 disabled={isLoading}
-                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all duration-200 border border-white/20 hover:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-all duration-200 border border-white/20 hover:border-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {isLoading ? (
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
                 ) : (
-                  <RefreshCw className="h-5 w-5" />
+                  <RefreshCw className="h-4 w-4" />
                 )}
                 {isLoading ? 'Syncing...' : 'Sync from Sheets'}
               </button>
               <button
                 onClick={exportToCSV}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
               >
-                <Download className="h-5 w-5" />
+                <Download className="h-4 w-4" />
                 Export CSV
               </button>
               <button
                 onClick={handleAddStudent}
-                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm"
               >
-                <Plus className="h-5 w-5" />
+                <Plus className="h-4 w-4" />
                 Add Student
               </button>
             </div>
           </div>
 
-          {/* Data Safety Notice - Moved inside header with better styling */}
-          <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-bold">ℹ</span>
+          {/* Data Safety Notice - More compact */}
+          <div className="mt-4 p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-bold">ℹ</span>
               </div>
-              <div className="text-blue-100">
-                <strong className="text-white">Data Safety:</strong> Any delete operations only affect your app database. 
-                Your Google Sheets data remains completely safe and untouched.
+              <div className="text-blue-100 text-sm">
+                <strong className="text-white">Data Safety:</strong> Delete operations only affect your app database. Google Sheets data remains safe.
               </div>
             </div>
           </div>
@@ -348,7 +347,7 @@ export default function StudentsPage() {
                 placeholder="Search by name, student ID, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-500"
               />
             </div>
             
@@ -403,29 +402,29 @@ export default function StudentsPage() {
         )}
 
         {/* Students Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
           {filteredStudents.map(student => (
-            <div key={student.id} className="group bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden">
+            <div key={student.id} className="group bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all duration-300 overflow-hidden">
               {/* Card Header with Checkbox */}
-              <div className="p-6 pb-4">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-start gap-4 flex-1">
+              <div className="p-4 pb-3">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-start gap-3 flex-1">
                     <input
                       type="checkbox"
                       checked={selectedStudents.includes(student.id)}
                       onChange={() => toggleStudentSelection(student.id)}
-                      className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-colors mt-1"
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-colors mt-1"
                     />
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                      <User className="h-7 w-7 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                      <User className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors truncate">
+                      <h3 className="font-bold text-base text-gray-900 group-hover:text-blue-600 transition-colors truncate">
                         {student.firstName} {student.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm text-gray-600 font-medium">ID: {student.studentId}</p>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <p className="text-xs text-gray-600 font-medium">ID: {student.studentId}</p>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                           student.status === 'active' 
                             ? 'bg-green-100 text-green-800 border border-green-200' 
                             : 'bg-red-100 text-red-800 border border-red-200'
@@ -438,77 +437,77 @@ export default function StudentsPage() {
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <button
                       onClick={() => handleEditStudent(student)}
-                      className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Edit Student"
                     >
-                      <Edit className="h-4 w-4 text-blue-600" />
+                      <Edit className="h-3.5 w-3.5 text-blue-600" />
                     </button>
                     <button
                       onClick={() => handleDeleteStudent(student.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete Student"
                     >
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                      <Trash2 className="h-3.5 w-3.5 text-red-600" />
                     </button>
                   </div>
                 </div>
 
                 {/* Student Details */}
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <BookOpen className="h-4 w-4 text-orange-600" />
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <BookOpen className="h-3 w-3 text-orange-600" />
                     </div>
-                    <div>
-                      <span className="text-gray-600">Age</span>
-                      <p className="font-semibold text-gray-900">{student.age || 'Not specified'}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-xs">Age:</span>
+                      <p className="font-semibold text-gray-900 text-sm">{student.age || 'N/A'}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Mail className="h-4 w-4 text-blue-600" />
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Mail className="h-3 w-3 text-blue-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-gray-600">Email</span>
-                      <p className="font-medium text-gray-900 truncate">{student.email}</p>
+                      <span className="text-gray-500 text-xs">Email:</span>
+                      <p className="font-medium text-gray-900 text-sm truncate">{student.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Phone className="h-4 w-4 text-green-600" />
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Phone className="h-3 w-3 text-green-600" />
                     </div>
                     <div>
-                      <span className="text-gray-600">Phone</span>
-                      <p className="font-medium text-gray-900">{student.phone}</p>
+                      <span className="text-gray-500 text-xs">Phone:</span>
+                      <p className="font-medium text-gray-900 text-sm">{student.phone}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Calendar className="h-4 w-4 text-purple-600" />
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-3 w-3 text-purple-600" />
                     </div>
                     <div>
-                      <span className="text-gray-600">Date of Birth</span>
-                      <p className="font-medium text-gray-900">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'Not specified'}</p>
+                      <span className="text-gray-500 text-xs">DOB:</span>
+                      <p className="font-medium text-gray-900 text-sm">{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'N/A'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                      <User className="h-4 w-4 text-red-600" />
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="w-6 h-6 bg-red-100 rounded-lg flex items-center justify-center">
+                      <User className="h-3 w-3 text-red-600" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-gray-600">Emergency Contact</span>
-                      <p className="font-medium text-gray-900 truncate">{student.parentName || 'Not specified'}</p>
+                      <span className="text-gray-500 text-xs">Emergency:</span>
+                      <p className="font-medium text-gray-900 text-sm truncate">{student.parentName || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+              {/* Card Footer - More compact */}
+              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                   <span>Enrolled: {new Date(student.enrollmentDate).toLocaleDateString()}</span>
