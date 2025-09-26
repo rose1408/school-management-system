@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export interface Schedule {
@@ -30,17 +30,27 @@ export function useRealtimeSchedules() {
 
   useEffect(() => {
     try {
-      const q = query(collection(db, 'schedules'), orderBy('createdAt', 'desc'));
+      // Simple query without orderBy to avoid index issues
+      const schedulesRef = collection(db, 'schedules');
       
-      const unsubscribe = onSnapshot(q, 
+      const unsubscribe = onSnapshot(schedulesRef, 
         (snapshot) => {
           const schedulesData = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           })) as Schedule[];
           
-          console.log('📅 Real-time schedules update:', schedulesData.length, 'schedules loaded');
-          setSchedules(schedulesData);
+          // Sort on client side by createdAt if available, then by id
+          const sortedSchedules = schedulesData.sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+              return b.createdAt.seconds - a.createdAt.seconds;
+            }
+            return b.id.localeCompare(a.id);
+          });
+          
+          console.log('📅 Real-time schedules update:', sortedSchedules.length, 'schedules loaded');
+          console.log('📋 Schedule data:', sortedSchedules);
+          setSchedules(sortedSchedules);
           setLoading(false);
           setError(null);
         },

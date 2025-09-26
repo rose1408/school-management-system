@@ -130,7 +130,11 @@ export default function TeachersPage() {
   }, [showModal]);
 
   const getTeacherSchedule = (teacherId: string) => {
-    return schedules.filter(schedule => schedule.teacherId === teacherId);
+    const teacherSchedules = schedules.filter(schedule => schedule.teacherId === teacherId);
+    console.log(`🔍 Getting schedules for teacher ${teacherId}:`, teacherSchedules);
+    console.log(`📊 Total schedules in system:`, schedules.length);
+    console.log(`🎯 Found ${teacherSchedules.length} schedules for this teacher`);
+    return teacherSchedules;
   };
 
   // Loading and error states
