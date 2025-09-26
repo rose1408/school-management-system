@@ -207,26 +207,54 @@ export default function TeachersPage() {
         <div className="bg-yellow-100 border border-yellow-400 rounded-xl shadow-lg p-6 mb-8">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-xl font-bold text-red-800">🔧 DEBUG PANEL - v{Date.now()}</h2>
-              <p className="text-sm text-gray-600">If you see this, the deployment is working</p>
+              <h2 className="text-xl font-bold text-red-800">🔧 EMERGENCY DEBUG - v{Date.now()}</h2>
+              <p className="text-sm text-gray-600">Testing direct Firebase connection</p>
             </div>
-            <button
-              onClick={async () => {
-                try {
-                  console.log('🧪 Testing API fetch...');
-                  const response = await fetch('/api/schedules');
-                  const data = await response.json();
-                  console.log('🧪 API Response:', data);
-                  alert(`API Test: Found ${data.count || 0} schedules. Check console for details.`);
-                } catch (error) {
-                  console.error('🧪 API Test Error:', error);
-                  alert('API Test Failed - Check console');
-                }
-              }}
-              className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
-            >
-              Test API
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    // Test direct Firebase connection
+                    const { collection, getDocs } = await import('firebase/firestore');
+                    const { db } = await import('@/lib/firebase');
+                    
+                    console.log('🔍 Testing direct Firebase connection...');
+                    console.log('🔍 DB object:', db);
+                    
+                    const snapshot = await getDocs(collection(db, 'schedules'));
+                    const schedules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    console.log('✅ Direct Firebase test successful:', schedules.length, 'schedules');
+                    console.log('📋 Direct Firebase data:', schedules);
+                    
+                    alert(`Direct Firebase Test: Found ${schedules.length} schedules! Check console for details.`);
+                  } catch (error) {
+                    console.error('❌ Direct Firebase test failed:', error);
+                    alert(`Firebase Test Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                  }
+                }}
+                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+              >
+                Test Firebase Direct
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Testing API fetch...');
+                    const response = await fetch('/api/schedules');
+                    const data = await response.json();
+                    console.log('🧪 API Response:', data);
+                    alert(`API Test: Found ${data.count || 0} schedules. Check console for details.`);
+                  } catch (error) {
+                    console.error('🧪 API Test Error:', error);
+                    alert('API Test Failed - Check console');
+                  }
+                }}
+                className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+              >
+                Test API
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm bg-white p-4 rounded">
             <div>
