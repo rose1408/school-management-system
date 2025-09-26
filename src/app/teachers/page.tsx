@@ -106,6 +106,19 @@ export default function TeachersPage() {
     console.log('🔍 DEBUG: Schedules state updated:', schedules);
     console.log('🔍 DEBUG: Schedules loading:', schedulesLoading);
     console.log('🔍 DEBUG: Schedules error:', schedulesError);
+    
+    // Log each schedule in detail
+    schedules.forEach((schedule, index) => {
+      console.log(`📋 Schedule ${index + 1}:`, {
+        id: schedule.id,
+        teacherId: schedule.teacherId,
+        teacherName: schedule.teacherName,
+        studentName: schedule.studentName,
+        day: schedule.day,
+        time: schedule.time,
+        allFields: schedule
+      });
+    });
   }, [schedules, schedulesLoading, schedulesError]);
 
   // Reset pagination when teacher selection changes
@@ -168,8 +181,21 @@ export default function TeachersPage() {
   }, [showModal]);
 
   const getTeacherSchedule = (teacherId: string) => {
-    const teacherSchedules = schedules.filter(schedule => schedule.teacherId === teacherId);
-    console.log(`🔍 Getting schedules for teacher ${teacherId}:`, teacherSchedules);
+    console.log(`🔍 Getting schedules for teacher ID: "${teacherId}"`);
+    
+    // Log all available teacher data
+    const teacher = realtimeTeachers.find(t => t.id === teacherId);
+    if (teacher) {
+      console.log(`👨‍🏫 Teacher found: ${teacher.firstName} ${teacher.lastName} (ID: ${teacher.id})`);
+    } else {
+      console.log(`❌ No teacher found with ID: ${teacherId}`);
+    }
+    
+    const teacherSchedules = schedules.filter(schedule => {
+      console.log(`🔍 Checking schedule: teacherId="${schedule.teacherId}" vs looking for="${teacherId}"`);
+      return schedule.teacherId === teacherId;
+    });
+    
     console.log(`📊 Total schedules in system:`, schedules.length);
     console.log(`🎯 Found ${teacherSchedules.length} schedules for this teacher`);
     return teacherSchedules;
