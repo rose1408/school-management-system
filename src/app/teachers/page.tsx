@@ -76,7 +76,6 @@ export default function TeachersPage() {
   // Load schedules directly
   const loadSchedules = async () => {
     try {
-      console.log('🔍 Loading schedules directly...');
       setSchedulesLoading(true);
       
       const snapshot = await getDocs(collection(db, 'schedules'));
@@ -85,11 +84,10 @@ export default function TeachersPage() {
         ...doc.data()
       }));
       
-      console.log('✅ Loaded schedules:', schedulesData.length);
       setSchedules(schedulesData);
       setSchedulesError(null);
     } catch (error) {
-      console.error('❌ Error loading schedules:', error);
+      console.error('Error loading schedules:', error);
       setSchedulesError(error instanceof Error ? error.message : 'Failed to load schedules');
     } finally {
       setSchedulesLoading(false);
@@ -101,24 +99,11 @@ export default function TeachersPage() {
     loadSchedules();
   }, []);
 
-  // Debug: Log schedules data whenever it changes
+  // Debug: Log schedules data whenever it changes (can be removed in production)
   useEffect(() => {
-    console.log('🔍 DEBUG: Schedules state updated:', schedules);
-    console.log('🔍 DEBUG: Schedules loading:', schedulesLoading);
-    console.log('🔍 DEBUG: Schedules error:', schedulesError);
-    
-    // Log each schedule in detail
-    schedules.forEach((schedule, index) => {
-      console.log(`📋 Schedule ${index + 1}:`, {
-        id: schedule.id,
-        teacherId: schedule.teacherId,
-        teacherName: schedule.teacherName,
-        studentName: schedule.studentName,
-        day: schedule.day,
-        time: schedule.time,
-        allFields: schedule
-      });
-    });
+    if (schedules.length > 0) {
+      console.log(`✅ Loaded ${schedules.length} schedules successfully`);
+    }
   }, [schedules, schedulesLoading, schedulesError]);
 
   // Reset pagination when teacher selection changes
@@ -181,23 +166,7 @@ export default function TeachersPage() {
   }, [showModal]);
 
   const getTeacherSchedule = (teacherId: string) => {
-    console.log(`🔍 Getting schedules for teacher ID: "${teacherId}"`);
-    
-    // Log all available teacher data
-    const teacher = realtimeTeachers.find(t => t.id === teacherId);
-    if (teacher) {
-      console.log(`👨‍🏫 Teacher found: ${teacher.firstName} ${teacher.lastName} (ID: ${teacher.id})`);
-    } else {
-      console.log(`❌ No teacher found with ID: ${teacherId}`);
-    }
-    
-    const teacherSchedules = schedules.filter(schedule => {
-      console.log(`🔍 Checking schedule: teacherId="${schedule.teacherId}" vs looking for="${teacherId}"`);
-      return schedule.teacherId === teacherId;
-    });
-    
-    console.log(`📊 Total schedules in system:`, schedules.length);
-    console.log(`🎯 Found ${teacherSchedules.length} schedules for this teacher`);
+    const teacherSchedules = schedules.filter(schedule => schedule.teacherId === teacherId);
     return teacherSchedules;
   };
 
@@ -399,11 +368,7 @@ export default function TeachersPage() {
               </div>
 
               <button
-                onClick={() => {
-                  console.log('🔘 View Schedule clicked for teacher:', teacher);
-                  setSelectedTeacher(teacher);
-                  console.log('🔘 Selected teacher set to:', teacher);
-                }}
+                onClick={() => setSelectedTeacher(teacher)}
                 className="w-full px-3 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium"
               >
                 View Schedule
@@ -544,10 +509,7 @@ export default function TeachersPage() {
                 <p className="text-gray-600">{selectedTeacher.instrument}</p>
               </div>
               <button
-                onClick={() => {
-                  console.log('🔘 Close schedule view clicked');
-                  setSelectedTeacher(null);
-                }}
+                onClick={() => setSelectedTeacher(null)}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Close
@@ -557,13 +519,10 @@ export default function TeachersPage() {
           
           <div className="p-6">
             {(() => {
-              console.log('🔍 Rendering schedule display for selected teacher:', selectedTeacher);
               const schedules = getTeacherSchedule(selectedTeacher.id || '');
-              console.log('🔍 Got schedules for display:', schedules);
               const totalPages = Math.ceil(schedules.length / schedulesPerPage);
               const startIndex = (currentPage - 1) * schedulesPerPage;
               const paginatedSchedules = schedules.slice(startIndex, startIndex + schedulesPerPage);
-              console.log('🔍 Paginated schedules for display:', paginatedSchedules);
               
               return (
                 <>
