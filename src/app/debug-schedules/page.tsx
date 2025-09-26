@@ -48,7 +48,7 @@ export default function DebugSchedulesPage() {
   };
 
   const findTeacherMatches = () => {
-    const matches: any[] = [];
+    const matches: { schedule: any; matchingTeacher: any; hasMatch: boolean }[] = [];
     
     schedules.forEach(schedule => {
       const matchingTeacher = teachers.find(teacher => 
