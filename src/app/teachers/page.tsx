@@ -399,7 +399,11 @@ export default function TeachersPage() {
               </div>
 
               <button
-                onClick={() => setSelectedTeacher(teacher)}
+                onClick={() => {
+                  console.log('🔘 View Schedule clicked for teacher:', teacher);
+                  setSelectedTeacher(teacher);
+                  console.log('🔘 Selected teacher set to:', teacher);
+                }}
                 className="w-full px-3 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium"
               >
                 View Schedule
@@ -529,7 +533,7 @@ export default function TeachersPage() {
       )}
 
       {/* Teacher Schedule Display - Inline */}
-      {selectedTeacher && (
+      {selectedTeacher ? (
         <div className="mt-8 bg-white rounded-xl shadow-lg">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -540,7 +544,10 @@ export default function TeachersPage() {
                 <p className="text-gray-600">{selectedTeacher.instrument}</p>
               </div>
               <button
-                onClick={() => setSelectedTeacher(null)}
+                onClick={() => {
+                  console.log('🔘 Close schedule view clicked');
+                  setSelectedTeacher(null);
+                }}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Close
@@ -550,10 +557,13 @@ export default function TeachersPage() {
           
           <div className="p-6">
             {(() => {
+              console.log('🔍 Rendering schedule display for selected teacher:', selectedTeacher);
               const schedules = getTeacherSchedule(selectedTeacher.id || '');
+              console.log('🔍 Got schedules for display:', schedules);
               const totalPages = Math.ceil(schedules.length / schedulesPerPage);
               const startIndex = (currentPage - 1) * schedulesPerPage;
               const paginatedSchedules = schedules.slice(startIndex, startIndex + schedulesPerPage);
+              console.log('🔍 Paginated schedules for display:', paginatedSchedules);
               
               return (
                 <>
@@ -649,6 +659,10 @@ export default function TeachersPage() {
               );
             })()}
           </div>
+        </div>
+      ) : (
+        <div className="mt-8 text-center text-gray-500">
+          <p>Click "View Schedule" for a teacher to see their schedules here.</p>
         </div>
       )}
 
