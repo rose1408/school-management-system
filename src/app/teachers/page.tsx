@@ -868,6 +868,28 @@ export default function TeachersPage() {
     return schedules.filter(schedule => schedule.teacherId === teacherId);
   };
 
+  const getInstrumentColor = (instrument: string) => {
+    const colors: { [key: string]: string } = {
+      'Piano': 'bg-blue-500',
+      'Guitar': 'bg-red-500',
+      'Violin': 'bg-purple-500',
+      'Drums': 'bg-orange-500',
+      'Flute': 'bg-green-500',
+      'Saxophone': 'bg-yellow-500',
+      'Trumpet': 'bg-pink-500',
+      'Cello': 'bg-indigo-500',
+      'Clarinet': 'bg-teal-500',
+      'Bass': 'bg-gray-500',
+    };
+    return colors[instrument] || 'bg-gray-400';
+  };
+
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return '';
+    // Simple phone formatting - you can enhance this as needed
+    return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  };
+
   const handleViewSchedule = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setShowScheduleView(true);
