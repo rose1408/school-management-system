@@ -4,24 +4,8 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Edit, Trash2, User, Calendar, Phone, Music, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
+import { useRealtimeSchedules } from "@/hooks/useRealtimeSchedules";
 import { Teacher } from "@/lib/db";
-
-interface TeacherSchedule {
-  id: string;
-  teacherId: string;
-  studentName: string;
-  instrument: string;
-  level: string;
-  room: string;
-  time: string;
-  day: string;
-  duration: string;
-  cardNumber: string;
-  currentLessonNumber: number;
-  maxLessons: number;
-  startDate?: string;
-  isActive: boolean;
-}
 
 // Format phone number to Philippine format
 const formatPhoneNumber = (phone: string): string => {
@@ -78,12 +62,12 @@ const formatPhoneNumberInput = (value: string): string => {
 
 export default function TeachersPage() {
   const { teachers: realtimeTeachers, loading: realtimeLoading, error: realtimeError } = useRealtimeTeachers();
+  const { schedules, loading: schedulesLoading, error: schedulesError } = useRealtimeSchedules();
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const schedulesPerPage = 15;
-  const [schedules] = useState<TeacherSchedule[]>([]); // This would come from your schedule management system
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
   // Reset pagination when teacher selection changes
@@ -150,23 +134,27 @@ export default function TeachersPage() {
   };
 
   // Loading and error states
-  if (realtimeLoading) {
+  if (realtimeLoading || schedulesLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading teachers...</p>
+          <p className="text-gray-600">
+            Loading {realtimeLoading ? 'teachers' : ''}
+            {realtimeLoading && schedulesLoading ? ' and ' : ''}
+            {schedulesLoading ? 'schedules' : ''}...
+          </p>
         </div>
       </div>
     );
   }
 
-  if (realtimeError) {
+  if (realtimeError || schedulesError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">Error loading teachers</div>
-          <p className="text-gray-600">{realtimeError}</p>
+          <div className="text-red-600 text-xl mb-4">Error loading data</div>
+          <p className="text-gray-600">{realtimeError || schedulesError}</p>
         </div>
       </div>
     );
@@ -413,33 +401,37 @@ export default function TeachersPage() {
                     <div className="space-y-4">
                       {paginatedSchedules.map((schedule) => (
                         <div key={schedule.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                               <h4 className="font-medium text-gray-800">Student</h4>
                               <p className="text-gray-600">{schedule.studentName}</p>
+                              <p className="text-xs text-gray-500">Card: {schedule.studentCardNumber}</p>
                             </div>
                             <div>
                               <h4 className="font-medium text-gray-800">Day & Time</h4>
                               <p className="text-gray-600">{schedule.day} at {schedule.time}</p>
+                              <p className="text-xs text-gray-500">{schedule.duration} minutes</p>
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-800">Duration</h4>
-                              <p className="text-gray-600">{schedule.duration}</p>
+                              <h4 className="font-medium text-gray-800">Lesson Details</h4>
+                              <p className="text-gray-600">{schedule.instrument}</p>
+                              <p className="text-xs text-gray-500">Lesson #{schedule.lessonNumber}</p>
                             </div>
                             <div>
                               <h4 className="font-medium text-gray-800">Room</h4>
-                              <p className="text-gray-600">{schedule.room}</p>
+                              <p className="text-gray-600">{schedule.room || 'Not specified'}</p>
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs mt-1 ${schedule.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {schedule.isActive ? 'Active' : 'Inactive'}
+                              </span>
                             </div>
                           </div>
-                          <div className="mt-3 flex items-center justify-between">
-                            <span className={`px-2 py-1 rounded-full text-xs ${schedule.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {schedule.isActive ? 'Active' : 'Inactive'}
+                          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                            <span>
+                              {schedule.startDate && `Started: ${new Date(schedule.startDate).toLocaleDateString()}`}
                             </span>
-                            {schedule.startDate && (
-                              <span className="text-xs text-gray-500">
-                                Started: {new Date(schedule.startDate).toLocaleDateString()}
-                              </span>
-                            )}
+                            <span>
+                              Level: {schedule.level}
+                            </span>
                           </div>
                         </div>
                       ))}
