@@ -3,9 +3,10 @@ import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore
 import { db } from '@/lib/firebase';
 
 // GET - Fetch all schedules
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    console.log('🔍 GET /api/schedules: Starting fetch');
+    console.log('🔍 GET /api/schedules: Starting fetch - Method:', request.method);
+    console.log('🔍 GET /api/schedules: URL:', request.url);
     
     if (!db) {
       console.error('❌ Firebase database not initialized');
@@ -16,6 +17,7 @@ export async function GET() {
     }
 
     const schedulesRef = collection(db, 'schedules');
+    console.log('📊 Getting schedules from Firestore...');
     const snapshot = await getDocs(schedulesRef);
     
     const schedules = snapshot.docs.map(doc => ({
@@ -24,11 +26,14 @@ export async function GET() {
     }));
 
     console.log('✅ GET /api/schedules: Found', schedules.length, 'schedules');
+    console.log('📋 Schedule data:', schedules);
     
     return NextResponse.json({ 
+      success: true,
       schedules,
       count: schedules.length,
-      message: 'Schedules fetched successfully'
+      message: 'Schedules fetched successfully',
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('❌ GET /api/schedules Error:', error);
