@@ -203,10 +203,13 @@ export default function TeachersPage() {
           </div>
         </div>
 
-        {/* Debug Information */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        {/* FORCE CACHE CLEAR - Debug Information */}
+        <div className="bg-yellow-100 border border-yellow-400 rounded-xl shadow-lg p-6 mb-8">
           <div className="flex justify-between items-start mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Debug Information</h2>
+            <div>
+              <h2 className="text-xl font-bold text-red-800">🔧 DEBUG PANEL - v{Date.now()}</h2>
+              <p className="text-sm text-gray-600">If you see this, the deployment is working</p>
+            </div>
             <button
               onClick={async () => {
                 try {
@@ -225,23 +228,36 @@ export default function TeachersPage() {
               Test API
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm bg-white p-4 rounded">
             <div>
-              <strong>Schedules Loading:</strong> {schedulesLoading ? 'Yes' : 'No'}
+              <strong>⏳ Schedules Loading:</strong> <span className={schedulesLoading ? 'text-orange-600' : 'text-green-600'}>{schedulesLoading ? 'Yes' : 'No'}</span>
             </div>
             <div>
-              <strong>Schedules Error:</strong> {schedulesError || 'None'}
+              <strong>❌ Schedules Error:</strong> <span className={schedulesError ? 'text-red-600' : 'text-green-600'}>{schedulesError || 'None'}</span>
             </div>
             <div>
-              <strong>Total Schedules:</strong> {schedules.length}
+              <strong>📊 Total Schedules:</strong> <span className="text-blue-600 font-bold">{schedules.length}</span>
+            </div>
+            <div>
+              <strong>🔗 DB Connected:</strong> <span className="text-green-600">Yes</span>
             </div>
           </div>
           {schedules.length > 0 && (
             <div className="mt-4">
-              <strong>Schedule Data:</strong>
+              <strong>📋 Schedule Data (First 2):</strong>
               <pre className="bg-gray-100 p-2 rounded text-xs mt-2 overflow-auto max-h-40">
-                {JSON.stringify(schedules, null, 2)}
+                {JSON.stringify(schedules.slice(0, 2), null, 2)}
               </pre>
+            </div>
+          )}
+          {schedules.length === 0 && !schedulesLoading && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+              <p className="text-red-800">⚠️ No schedules found. This could mean:</p>
+              <ul className="list-disc list-inside text-sm text-red-600 mt-2">
+                <li>Schedules were never saved to Firestore</li>
+                <li>Firebase security rules are blocking reads</li>
+                <li>Wrong collection name or path</li>
+              </ul>
             </div>
           )}
         </div>
