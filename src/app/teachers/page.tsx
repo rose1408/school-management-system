@@ -830,6 +830,9 @@ export default function TeachersPage() {
     title: '',
     message: ''
   });
+  const [teacherFilter, setTeacherFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const schedulesPerPage = 12;
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -889,6 +892,29 @@ export default function TeachersPage() {
     // Simple phone formatting - you can enhance this as needed
     return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
   };
+
+  // Filter teachers based on search
+  const filteredTeachers = realtimeTeachers.filter(teacher => 
+    `${teacher.firstName} ${teacher.lastName}`.toLowerCase().includes(teacherFilter.toLowerCase()) ||
+    teacher.instrument.toLowerCase().includes(teacherFilter.toLowerCase())
+  );
+
+  // Get all schedules with teacher info for the schedules section
+  const schedulesWithTeacherInfo = schedules.map(schedule => {
+    const teacher = realtimeTeachers.find(t => t.id === schedule.teacherId);
+    return {
+      ...schedule,
+      teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Unknown Teacher',
+      teacherInstrument: teacher?.instrument || 'Unknown'
+    };
+  });
+
+  // Pagination for schedules
+  const totalPages = Math.ceil(schedulesWithTeacherInfo.length / schedulesPerPage);
+  const paginatedSchedules = schedulesWithTeacherInfo.slice(
+    (currentPage - 1) * schedulesPerPage,
+    currentPage * schedulesPerPage
+  );
 
   const handleViewSchedule = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
@@ -1078,7 +1104,7 @@ export default function TeachersPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {realtimeTeachers.map((teacher) => {
+                {filteredTeachers.map((teacher) => {
                   const instrumentColor = getInstrumentColor(teacher.instrument);
                   const teacherSchedule = getTeacherSchedule(teacher.id || '');
                   const hasActiveSchedule = teacherSchedule.length > 0;
@@ -1161,6 +1187,104 @@ export default function TeachersPage() {
                   );
                 })}
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="bg-white rounded-xl shadow-lg mb-8 p-6">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Filter: teachers name
+            </label>
+            <input
+              type="text"
+              placeholder="Search teachers..."
+              value={teacherFilter}
+              onChange={(e) => setTeacherFilter(e.target.value)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Schedules Section */}
+        <div className="bg-white rounded-xl shadow-lg mb-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-800">SCHEDULES:</h2>
+            <p className="text-sm text-gray-600 mt-1">All schedules of all teachers will be shown here, by paging</p>
+          </div>
+          
+          <div className="p-6">
+            {schedulesWithTeacherInfo.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No schedules found</h3>
+                <p className="text-gray-500">Add some schedules to see them here.</p>
+              </div>
+            ) : (
+              <>
+                {/* Schedule Cards Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                  {paginatedSchedules.map((schedule) => (
+                    <div key={schedule.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-colors cursor-pointer">
+                      <div className="text-xs text-gray-600 mb-1">
+                        {schedule.day}
+                      </div>
+                      <div className="text-sm font-medium text-gray-800 mb-1">
+                        {schedule.studentName}
+                      </div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        {schedule.teacherName}
+                      </div>
+                      <div className="text-xs text-orange-600 font-medium">
+                        {schedule.time}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {schedule.teacherInstrument}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-3 py-1 text-sm border rounded ${
+                          currentPage === page 
+                            ? 'bg-orange-600 text-white border-orange-600' 
+                            : 'border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
