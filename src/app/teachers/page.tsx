@@ -974,135 +974,154 @@ export default function TeachersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-orange-200 rounded-lg transition-colors">
-              <ArrowLeft className="h-6 w-6 text-orange-600" />
+            <Link href="/" className="p-2 hover:bg-white rounded-lg transition-colors shadow-sm">
+              <ArrowLeft className="h-6 w-6 text-gray-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Teachers Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Teachers Management</h1>
               <p className="text-gray-600 mt-1">Manage teacher profiles and their schedules</p>
             </div>
           </div>
           
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setEditingTeacher(null);
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Add Teacher
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setEditingTeacher(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-lg"
+          >
+            <Plus className="h-5 w-5" />
+            Add Teacher
+          </button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-orange-600 mb-2">
               {realtimeTeachers.length}
             </div>
-            <div className="text-gray-600">Total Teachers</div>
+            <div className="text-gray-600 text-sm">Total Teachers</div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-green-600 mb-2">
               {realtimeTeachers.filter(t => getTeacherSchedule(t.id || '').length > 0).length}
             </div>
-            <div className="text-gray-600">Active Teachers</div>
+            <div className="text-gray-600 text-sm">Active Teachers</div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-blue-600 mb-2">
               {schedules.length}
             </div>
-            <div className="text-gray-600">Total Classes</div>
+            <div className="text-gray-600 text-sm">Total Schedules</div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
             <div className="text-3xl font-bold text-purple-600 mb-2">
               {[...new Set(realtimeTeachers.map(t => t.instrument))].length}
             </div>
-            <div className="text-gray-600">Instruments</div>
+            <div className="text-gray-600 text-sm">Instruments</div>
           </div>
         </div>
 
-        {/* Teachers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {realtimeTeachers.map(teacher => {
-            const teacherSchedules = getTeacherSchedule(teacher.id || '');
-            
-            return (
-              <div key={teacher.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                {/* Teacher Header */}
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-white/20 rounded-full">
-                      <User className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{teacher.firstName} {teacher.lastName}</h3>
-                      <p className="text-orange-100">{teacher.instrument}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Teacher Info */}
-                <div className="p-6">
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{formatPhoneNumber(teacher.phone || '')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Music className="h-4 w-4" />
-                      <span>{teacher.instrument}</span>
-                    </div>
-                  </div>
-
-                  {/* Schedule Summary */}
-                  <div className="text-xs text-gray-500 mb-4">
-                    Classes: {teacherSchedules.length} scheduled
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleViewSchedule(teacher)}
-                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
-                    >
-                      View Schedule
-                    </button>
-                    <button
-                      onClick={() => handleAddSchedule(teacher)}
-                      className="flex-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
-                    >
-                      Add Schedule
-                    </button>
-                  </div>
-
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => {
-                        setEditingTeacher(teacher);
-                        setIsModalOpen(true);
-                      }}
-                      className="flex-1 px-3 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium"
-                    >
-                      <Edit className="h-4 w-4 inline mr-1" />
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        {/* Teachers List */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Teachers</h2>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left p-4 font-medium text-gray-700">Teacher</th>
+                  <th className="text-left p-4 font-medium text-gray-700">Contact</th>
+                  <th className="text-left p-4 font-medium text-gray-700">Instrument</th>
+                  <th className="text-left p-4 font-medium text-gray-700">Schedules</th>
+                  <th className="text-right p-4 font-medium text-gray-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {realtimeTeachers.map(teacher => {
+                  const teacherSchedules = getTeacherSchedule(teacher.id || '');
+                  
+                  return (
+                    <tr key={teacher.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-orange-600" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800">{teacher.firstName} {teacher.lastName}</div>
+                            <div className="text-sm text-gray-500">{teacher.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="text-sm text-gray-600">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Phone className="h-4 w-4" />
+                            {formatPhoneNumber(teacher.phone || '')}
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Music className="h-4 w-4 text-purple-600" />
+                          <span className="font-medium text-gray-700">{teacher.instrument}</span>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm text-gray-600">
+                            {teacherSchedules.length} classes
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <td className="p-4">
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            onClick={() => handleViewSchedule(teacher)}
+                            className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                          >
+                            View Schedule
+                          </button>
+                          <button
+                            onClick={() => handleAddSchedule(teacher)}
+                            className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
+                          >
+                            Add Schedule
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingTeacher(teacher);
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Modals */}
