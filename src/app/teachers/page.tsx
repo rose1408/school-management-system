@@ -1262,7 +1262,32 @@ export default function TeachersPage() {
                           </div>
 
                           <div className="mt-3 pt-3 border-t border-gray-200">
-                            <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
+                            <div className="flex items-center justify-between">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => {
+                                    // Find the full schedule object from schedules array
+                                    const fullSchedule = schedules.find(s => s.id === schedule.id);
+                                    if (fullSchedule) {
+                                      setEditingSchedule(fullSchedule);
+                                      setIsScheduleModalOpen(true);
+                                    }
+                                  }}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Schedule"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSchedule(schedule.id)}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete Schedule"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
