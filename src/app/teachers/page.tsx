@@ -4,8 +4,9 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Edit, Trash2, User, Calendar, Phone, Music, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
-import { useRealtimeSchedules } from "@/hooks/useRealtimeSchedules";
 import { Teacher } from "@/lib/db";
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Format phone number to Philippine format
 const formatPhoneNumber = (phone: string): string => {
@@ -62,13 +63,43 @@ const formatPhoneNumberInput = (value: string): string => {
 
 export default function TeachersPage() {
   const { teachers: realtimeTeachers, loading: realtimeLoading, error: realtimeError } = useRealtimeTeachers();
-  const { schedules, loading: schedulesLoading, error: schedulesError } = useRealtimeSchedules();
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(true);
+  const [schedulesError, setSchedulesError] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const schedulesPerPage = 15;
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+
+  // Load schedules directly
+  const loadSchedules = async () => {
+    try {
+      console.log('🔍 Loading schedules directly...');
+      setSchedulesLoading(true);
+      
+      const snapshot = await getDocs(collection(db, 'schedules'));
+      const schedulesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log('✅ Loaded schedules:', schedulesData.length);
+      setSchedules(schedulesData);
+      setSchedulesError(null);
+    } catch (error) {
+      console.error('❌ Error loading schedules:', error);
+      setSchedulesError(error instanceof Error ? error.message : 'Failed to load schedules');
+    } finally {
+      setSchedulesLoading(false);
+    }
+  };
+
+  // Load schedules on component mount
+  useEffect(() => {
+    loadSchedules();
+  }, []);
 
   // Debug: Log schedules data whenever it changes
   useEffect(() => {
@@ -456,6 +487,11 @@ export default function TeachersPage() {
               }
               
               setIsScheduleModalOpen(false);
+              
+              // Reload schedules to show the new one
+              console.log('🔄 Reloading schedules after creation...');
+              await loadSchedules();
+              
               showModal('success', 'Success', 'Schedule created successfully!');
             } catch (error) {
               console.error('❌ Client: Error saving schedule:', error);
