@@ -924,70 +924,110 @@ export default function TeachersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-100">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-orange-200 rounded-lg transition-colors">
-              <ArrowLeft className="h-6 w-6 text-orange-600" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Teachers Management</h1>
-              <p className="text-gray-600 mt-1">Manage teacher profiles and their schedules</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Professional Header */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 mb-8 p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link 
+                href="/" 
+                className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                  Teachers Management
+                </h1>
+                <p className="text-slate-600 mt-2 text-lg">
+                  Comprehensive teacher and schedule management system
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <button
-            onClick={() => {
-              setEditingTeacher(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add Teacher
-          </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-orange-600 mb-2">
-              {realtimeTeachers.length}
-            </div>
-            <div className="text-gray-600">Total Teachers</div>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {realtimeTeachers.filter(t => getTeacherSchedule(t.id || '').length > 0).length}
-            </div>
-            <div className="text-gray-600">Active Teachers</div>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">
-              {schedules.length}
-            </div>
-            <div className="text-gray-600">Total Classes</div>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {[...new Set(realtimeTeachers.map(t => t.instrument))].length}
-            </div>
-            <div className="text-gray-600">Instruments</div>
+            
+            <button
+              onClick={() => {
+                setEditingTeacher(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+            >
+              <Plus className="h-5 w-5" />
+              Add New Teacher
+            </button>
           </div>
         </div>
 
-        {/* Teachers Display */}
-        <div className="bg-white rounded-xl shadow-lg mb-8">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold">Teachers Directory</h2>
+        {/* Professional Stats Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">
+                  {realtimeTeachers.length}
+                </div>
+                <div className="text-slate-600 font-medium">Total Teachers</div>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-100 to-red-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+              </div>
+            </div>
           </div>
           
-          <div className="p-6">
+          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent mb-2">
+                  {realtimeTeachers.filter(t => getTeacherSchedule(t.id || '').length > 0).length}
+                </div>
+                <div className="text-slate-600 font-medium">Active Teachers</div>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent mb-2">
+                  {schedules.length}
+                </div>
+                <div className="text-slate-600 font-medium">Total Classes</div>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">
+                  {[...new Set(realtimeTeachers.map(t => t.instrument))].length}
+                </div>
+                <div className="text-slate-600 font-medium">Instruments</div>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Professional Teachers Directory */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 mb-8">
+          <div className="p-8 border-b border-slate-200/50">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+              Teachers Directory
+            </h2>
+            <p className="text-slate-600 mt-2">Manage and view all registered music teachers</p>
+          </div>
+          
+          <div className="p-8">
             {realtimeTeachers.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
