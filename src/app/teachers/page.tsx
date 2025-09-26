@@ -2,28 +2,13 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Edit, Trash2, User, Calendar, Phone, Music, CheckCircle2, XCircle, AlertTriangle, Info, Clock, MapPin, Printer } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, CheckCircle2, XCircle, AlertTriangle, Info, Printer } from "lucide-react";
 import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
 import { Teacher } from "@/lib/db";
 import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// Format phone number to Philippine format
-const formatPhoneNumber = (phone: string): string => {
-  const cleaned = phone.replace(/\D/g, '');
-  
-  if (cleaned.length === 10 && cleaned.startsWith('9')) {
-    return `+63 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-  } else if (cleaned.length === 11 && cleaned.startsWith('09')) {
-    return `+63 ${cleaned.slice(1, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
-  } else if (cleaned.length === 13 && cleaned.startsWith('639')) {
-    return `+63 ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
-  }
-  
-  return phone;
-};
-
-// Types for the original advanced system
+// Types for the advanced system
 interface TeacherSchedule {
   id: string;
   teacherId: string;
@@ -237,89 +222,6 @@ function TeacherScheduleView({ teacher, schedules, onClose, onEdit, onDelete, on
                 <ArrowLeft className="h-6 w-6 text-gray-600" />
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Individual Schedule Cards at Top */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Scheduled Lessons</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {schedules.map(schedule => (
-              <div key={schedule.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h4 className="font-semibold text-gray-800">{schedule.studentName}</h4>
-                    <p className="text-sm text-blue-600">{schedule.instrument} - {schedule.level}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => onIncrementLesson(schedule.id)}
-                      className="p-1 hover:bg-green-100 rounded"
-                      title="Mark lesson as completed"
-                      disabled={!schedule.isActive || schedule.currentLessonNumber >= schedule.maxLessons}
-                    >
-                      <Plus className="h-4 w-4 text-green-600" />
-                    </button>
-                    <button
-                      onClick={() => onEdit(schedule)}
-                      className="p-1 hover:bg-blue-100 rounded"
-                    >
-                      <Edit className="h-4 w-4 text-blue-600" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(schedule.id)}
-                      className="p-1 hover:bg-red-100 rounded"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </button>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>{schedule.day}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{schedule.time} ({schedule.duration})</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>{schedule.room}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
-                      Card: {schedule.cardNumber}
-                    </div>
-                    <div className={`text-xs px-2 py-1 rounded-full ${
-                      schedule.currentLessonNumber >= schedule.maxLessons
-                        ? 'bg-red-100 text-red-800'
-                        : schedule.currentLessonNumber >= schedule.maxLessons - 2
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      Lesson {schedule.currentLessonNumber}/{schedule.maxLessons}
-                    </div>
-                  </div>
-                  {!schedule.isActive && (
-                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                      <strong>Card Expired!</strong> Please renew to continue lessons.
-                      <button
-                        onClick={() => {
-                          const newCardNumber = prompt('Enter new card number:');
-                          if (newCardNumber) {
-                            onRenewCard(schedule.id, newCardNumber.toUpperCase());
-                          }
-                        }}
-                        className="ml-2 text-red-800 underline"
-                      >
-                        Renew Card
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
 
