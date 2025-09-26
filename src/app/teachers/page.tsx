@@ -1086,18 +1086,18 @@ export default function TeachersPage() {
                   return (
                     <div 
                       key={teacher.id} 
-                      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
+                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
                     >
-                      {/* Colored Header */}
-                      <div className={`${instrumentColor} p-4 text-white`}>
+                      {/* Colored Header with Gradient */}
+                      <div className={`${instrumentColor.replace('bg-', 'from-')} bg-gradient-to-r to-red-500 p-4 text-white`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
+                            <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold">
+                            <h3 className="font-semibold text-base">
                               {teacher.firstName} {teacher.lastName}
                             </h3>
                             <div className="text-sm opacity-90">
@@ -1108,48 +1108,51 @@ export default function TeachersPage() {
                       </div>
                       
                       {/* Content */}
-                      <div className="p-4">
-                        <div className="space-y-2 text-sm text-gray-600 mb-4">
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            {formatPhoneNumber(teacher.phone || '')}
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                            </svg>
-                            {teacher.instrument}
-                          </div>
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          {formatPhoneNumber(teacher.phone || '')}
                         </div>
                         
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="text-sm text-gray-500">
-                            Classes: {hasActiveSchedule ? `${teacherSchedule.length} scheduled` : '0 scheduled'}
-                          </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                          {teacher.instrument}
                         </div>
                         
-                        <div className="flex space-x-2">
+                        <div className="text-sm text-green-600 font-medium">
+                          Classes: {hasActiveSchedule ? `${teacherSchedule.length} scheduled` : '0 scheduled'}
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
                           <button
                             onClick={() => handleViewSchedule(teacher)}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            className="flex-1 px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
                           >
                             View Schedule
                           </button>
                           <button
                             onClick={() => handleAddSchedule(teacher)}
-                            className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                            className="flex-1 px-3 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
                           >
                             Add Schedule
                           </button>
+                        </div>
+                        
+                        <div className="flex justify-center pt-1">
                           <button
                             onClick={() => {
                               setEditingTeacher(teacher);
                               setIsModalOpen(true);
                             }}
-                            className="px-3 py-2 text-orange-600 border border-orange-600 text-sm font-medium rounded-lg hover:bg-orange-50 transition-colors"
+                            className="text-orange-500 text-sm hover:text-orange-600 transition-colors flex items-center gap-1"
                           >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
                             Edit
                           </button>
                         </div>
