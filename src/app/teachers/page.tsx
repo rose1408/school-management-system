@@ -352,18 +352,29 @@ export default function TeachersPage() {
           onClose={() => setIsScheduleModalOpen(false)}
           onSave={async (scheduleData) => {
             try {
+              console.log('🚀 Client: Sending schedule data:', scheduleData);
+              
               // Create new schedule
               const response = await fetch('/api/schedules', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(scheduleData)
               });
-              if (!response.ok) throw new Error('Failed to create schedule');
+              
+              const responseData = await response.json();
+              console.log('📥 Client: API response:', responseData);
+              
+              if (!response.ok) {
+                const errorMessage = responseData?.details || responseData?.error || 'Failed to create schedule';
+                throw new Error(errorMessage);
+              }
+              
               setIsScheduleModalOpen(false);
               showModal('success', 'Success', 'Schedule created successfully!');
             } catch (error) {
-              console.error('Error saving schedule:', error);
-              showModal('error', 'Error', 'Failed to create schedule. Please try again.');
+              console.error('❌ Client: Error saving schedule:', error);
+              const errorMessage = error instanceof Error ? error.message : 'Failed to create schedule. Please try again.';
+              showModal('error', 'Error', `Schedule creation failed: ${errorMessage}`);
             }
           }}
         />
