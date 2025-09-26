@@ -376,12 +376,7 @@ function TeacherModal({ teacher, onClose, onSave }: TeacherModalProps) {
     email: teacher?.email || '',
     phone: teacher?.phone || '',
     instrument: teacher?.instrument || '',
-    callName: teacher?.callName || '',
-    dateOfBirth: teacher?.dateOfBirth || '',
-    contactNumber: teacher?.contactNumber || '',
-    address: teacher?.address || '',
-    zipCode: teacher?.zipCode || '',
-    tinNumber: teacher?.tinNumber || ''
+    address: teacher?.address || ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -811,9 +806,17 @@ export default function TeachersPage() {
     };
   });
 
+  // Filter schedules based on search
+  const filteredSchedules = schedulesWithTeacherInfo.filter(schedule => 
+    schedule.studentName.toLowerCase().includes(teacherFilter.toLowerCase()) ||
+    schedule.teacherName.toLowerCase().includes(teacherFilter.toLowerCase()) ||
+    schedule.teacherInstrument.toLowerCase().includes(teacherFilter.toLowerCase()) ||
+    schedule.day.toLowerCase().includes(teacherFilter.toLowerCase())
+  );
+
   // Pagination for schedules
-  const totalPages = Math.ceil(schedulesWithTeacherInfo.length / schedulesPerPage);
-  const paginatedSchedules = schedulesWithTeacherInfo.slice(
+  const totalPages = Math.ceil(filteredSchedules.length / schedulesPerPage);
+  const paginatedSchedules = filteredSchedules.slice(
     (currentPage - 1) * schedulesPerPage,
     currentPage * schedulesPerPage
   );
@@ -926,21 +929,21 @@ export default function TeachersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Professional Header */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 mb-8 p-8">
+        {/* Clean Header */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8 p-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Link 
                 href="/" 
-                className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-lg"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold text-gray-800">
                   Teachers Management
                 </h1>
-                <p className="text-slate-600 mt-2 text-lg">
+                <p className="text-gray-600 mt-2 text-lg">
                   Comprehensive teacher and schedule management system
                 </p>
               </div>
@@ -951,7 +954,7 @@ export default function TeachersPage() {
                 setEditingTeacher(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+              className="flex items-center gap-3 px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors shadow-lg font-semibold"
             >
               <Plus className="h-5 w-5" />
               Add New Teacher
@@ -959,60 +962,60 @@ export default function TeachersPage() {
           </div>
         </div>
 
-        {/* Professional Stats Dashboard */}
+        {/* Clean Stats Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">
+                <div className="text-3xl font-bold text-orange-500 mb-2">
                   {realtimeTeachers.length}
                 </div>
-                <div className="text-slate-600 font-medium">Total Teachers</div>
+                <div className="text-gray-600 font-medium">Total Teachers</div>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-100 to-red-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <div className="w-6 h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-orange-500 rounded-full"></div>
               </div>
             </div>
           </div>
           
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent mb-2">
+                <div className="text-3xl font-bold text-green-500 mb-2">
                   {realtimeTeachers.filter(t => getTeacherSchedule(t.id || '').length > 0).length}
                 </div>
-                <div className="text-slate-600 font-medium">Active Teachers</div>
+                <div className="text-gray-600 font-medium">Active Teachers</div>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"></div>
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-green-500 rounded-full"></div>
               </div>
             </div>
           </div>
           
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent mb-2">
+                <div className="text-3xl font-bold text-blue-500 mb-2">
                   {schedules.length}
                 </div>
-                <div className="text-slate-600 font-medium">Total Classes</div>
+                <div className="text-gray-600 font-medium">Total Classes</div>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-blue-500 rounded-full"></div>
               </div>
             </div>
           </div>
           
-          <div className="group bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 hover:scale-105">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">
+                <div className="text-3xl font-bold text-purple-500 mb-2">
                   {[...new Set(realtimeTeachers.map(t => t.instrument))].length}
                 </div>
-                <div className="text-slate-600 font-medium">Instruments</div>
+                <div className="text-gray-600 font-medium">Instruments</div>
               </div>
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-purple-500 rounded-full"></div>
               </div>
             </div>
           </div>
@@ -1054,74 +1057,74 @@ export default function TeachersPage() {
                   return (
                     <div 
                       key={teacher.id} 
-                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+                      className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
                     >
-                      {/* Colored Header with Gradient */}
-                      <div className={`${instrumentColor.replace('bg-', 'from-')} bg-gradient-to-r to-red-500 p-4 text-white`}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
-                            <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
+                      {/* Clean Card Content */}
+                      <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className={`w-12 h-12 ${instrumentColor} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
+                            {teacher.firstName.charAt(0)}{teacher.lastName.charAt(0)}
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-base">
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800">
                               {teacher.firstName} {teacher.lastName}
                             </h3>
-                            <div className="text-sm opacity-90">
-                              {teacher.instrument}
-                            </div>
+                            <p className="text-sm text-gray-600">
+                              {teacher.instrument} Instructor
+                            </p>
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                          {formatPhoneNumber(teacher.phone || '')}
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                            </svg>
+                            <span className="text-gray-700">{teacher.email}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span className="text-gray-700">{formatPhoneNumber(teacher.phone || '')}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm">
+                            <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-gray-700">
+                              {hasActiveSchedule ? `${teacherSchedule.length} scheduled` : '0 scheduled'}
+                            </span>
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                          </svg>
-                          {teacher.email}
-                        </div>
-                        
-                        <div className="text-sm text-green-600 font-medium">
-                          Classes: {hasActiveSchedule ? `${teacherSchedule.length} scheduled` : '0 scheduled'}
-                        </div>
-                        
-                        <div className="flex gap-2 pt-2">
+
+                        <div className="flex gap-2 pt-4 mt-4 border-t border-gray-200">
                           <button
                             onClick={() => handleViewSchedule(teacher)}
-                            className="flex-1 px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                            className="flex-1 px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors font-medium"
                           >
                             View Schedule
                           </button>
                           <button
                             onClick={() => handleAddSchedule(teacher)}
-                            className="flex-1 px-3 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
+                            className="flex-1 px-3 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors font-medium"
                           >
                             Add Schedule
                           </button>
                         </div>
                         
-                        <div className="flex justify-center pt-1">
+                        <div className="flex justify-center pt-2">
                           <button
                             onClick={() => {
                               setEditingTeacher(teacher);
                               setIsModalOpen(true);
                             }}
-                            className="text-orange-500 text-sm hover:text-orange-600 transition-colors flex items-center gap-1"
+                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Edit Teacher"
                           >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
+                            <Edit className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -1133,97 +1136,193 @@ export default function TeachersPage() {
           </div>
         </div>
 
-        {/* Filter Section */}
-        <div className="bg-white rounded-xl shadow-lg mb-8 p-6">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-              Filter: teachers name
-            </label>
-            <input
-              type="text"
-              placeholder="Search teachers..."
-              value={teacherFilter}
-              onChange={(e) => setTeacherFilter(e.target.value)}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            />
+        {/* Clean Search Filter */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8 p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-800">
+                  Search Schedules
+                </label>
+                <p className="text-xs text-gray-500">Filter by student, teacher, instrument, or day</p>
+              </div>
+            </div>
+            <div className="flex-1 w-full sm:w-auto">
+              <input
+                type="text"
+                placeholder="Search schedules, teachers, students..."
+                value={teacherFilter}
+                onChange={(e) => {
+                  setTeacherFilter(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
+                }}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-400 font-medium shadow-sm"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Schedules Section */}
-        <div className="bg-white rounded-xl shadow-lg mb-8">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-800">SCHEDULES:</h2>
-            <p className="text-sm text-gray-600 mt-1">All schedules of all teachers will be shown here, by paging</p>
+        {/* Clean Schedules Overview */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+          <div className="p-8 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Schedules Overview
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  {filteredSchedules.length} of {schedulesWithTeacherInfo.length} schedules 
+                  {teacherFilter && ` matching "${teacherFilter}"`}
+                </p>
+              </div>
+              <div className="bg-gray-100 rounded-xl p-3">
+                <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
           </div>
           
-          <div className="p-6">
-            {schedulesWithTeacherInfo.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="p-8">
+            {filteredSchedules.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gradient-to-r from-slate-200 to-slate-300 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No schedules found</h3>
-                <p className="text-gray-500">Add some schedules to see them here.</p>
+                <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                  {teacherFilter ? 'No schedules match your search' : 'No schedules found'}
+                </h3>
+                <p className="text-slate-600 max-w-md mx-auto">
+                  {teacherFilter 
+                    ? 'Try adjusting your search terms or clear the filter to see all schedules.' 
+                    : 'Add some schedules to see them displayed here with pagination.'
+                  }
+                </p>
+                {teacherFilter && (
+                  <button
+                    onClick={() => setTeacherFilter('')}
+                    className="mt-4 px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold"
+                  >
+                    Clear Filter
+                  </button>
+                )}
               </div>
             ) : (
               <>
-                {/* Schedule Cards Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-                  {paginatedSchedules.map((schedule) => (
-                    <div key={schedule.id} className="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-colors cursor-pointer">
-                      <div className="text-xs text-gray-600 mb-1">
-                        {schedule.day}
+                {/* Clean Schedule Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
+                  {paginatedSchedules.map((schedule) => {
+                    const instrumentColor = getInstrumentColor(schedule.teacherInstrument);
+                    return (
+                      <div 
+                        key={schedule.id} 
+                        className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* Card Content */}
+                        <div className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-10 h-10 ${instrumentColor} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+                              {schedule.day.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-gray-800">
+                                {schedule.day}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {schedule.time}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold text-gray-800">
+                              {schedule.studentName}
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="text-gray-600">{schedule.teacherName}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l6 6V5" />
+                              </svg>
+                              <span className="text-gray-600">{schedule.teacherInstrument}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="w-2 h-2 bg-green-500 rounded-full ml-auto"></div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm font-medium text-gray-800 mb-1">
-                        {schedule.studentName}
-                      </div>
-                      <div className="text-xs text-gray-500 mb-1">
-                        {schedule.teacherName}
-                      </div>
-                      <div className="text-xs text-orange-600 font-medium">
-                        {schedule.time}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {schedule.teacherInstrument}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                {/* Pagination */}
+                {/* Enhanced Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center gap-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50">
+                    <div className="text-sm text-slate-600">
+                      Showing {((currentPage - 1) * schedulesPerPage) + 1} to {Math.min(currentPage * schedulesPerPage, filteredSchedules.length)} of {filteredSchedules.length} schedules
+                    </div>
                     
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <div className="flex items-center gap-2">
                       <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1 text-sm border rounded ${
-                          currentPage === page 
-                            ? 'bg-orange-600 text-white border-orange-600' 
-                            : 'border-gray-300 hover:bg-gray-50'
-                        }`}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {page}
+                        Previous
                       </button>
-                    ))}
-                    
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
+                      
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                          let page;
+                          if (totalPages <= 7) {
+                            page = i + 1;
+                          } else if (currentPage <= 4) {
+                            page = i + 1;
+                          } else if (currentPage >= totalPages - 3) {
+                            page = totalPages - 6 + i;
+                          } else {
+                            page = currentPage - 3 + i;
+                          }
+                          
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                currentPage === page 
+                                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' 
+                                  : 'text-slate-600 bg-white border border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 )}
               </>
