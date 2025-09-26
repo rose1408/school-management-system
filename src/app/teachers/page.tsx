@@ -1086,24 +1086,29 @@ export default function TeachersPage() {
                   return (
                     <div 
                       key={teacher.id} 
-                      className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100"
+                      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden"
                     >
-                      <div className={`h-2 rounded-t-xl ${instrumentColor}`}></div>
-                      
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
+                      {/* Colored Header */}
+                      <div className={`${instrumentColor} p-4 text-white`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            <h3 className="text-lg font-semibold">
                               {teacher.firstName} {teacher.lastName}
                             </h3>
-                            <div className="flex items-center mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${instrumentColor} text-white`}>
-                                {teacher.instrument}
-                              </span>
+                            <div className="text-sm opacity-90">
+                              {teacher.instrument}
                             </div>
                           </div>
                         </div>
-                        
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="p-4">
                         <div className="space-y-2 text-sm text-gray-600 mb-4">
                           <div className="flex items-center">
                             <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1113,25 +1118,22 @@ export default function TeachersPage() {
                           </div>
                           <div className="flex items-center">
                             <svg className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                             </svg>
-                            {teacher.email}
+                            {teacher.instrument}
                           </div>
                         </div>
                         
                         <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center text-sm">
-                            <div className={`w-2 h-2 rounded-full mr-2 ${hasActiveSchedule ? 'bg-green-400' : 'bg-gray-300'}`}></div>
-                            <span className={hasActiveSchedule ? 'text-green-600' : 'text-gray-500'}>
-                              {hasActiveSchedule ? `${teacherSchedule.length} Active Classes` : 'No Active Classes'}
-                            </span>
+                          <div className="text-sm text-gray-500">
+                            Classes: {hasActiveSchedule ? `${teacherSchedule.length} scheduled` : '0 scheduled'}
                           </div>
                         </div>
                         
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewSchedule(teacher)}
-                            className="flex-1 px-3 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                           >
                             View Schedule
                           </button>
@@ -1146,7 +1148,7 @@ export default function TeachersPage() {
                               setEditingTeacher(teacher);
                               setIsModalOpen(true);
                             }}
-                            className="px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-3 py-2 text-orange-600 border border-orange-600 text-sm font-medium rounded-lg hover:bg-orange-50 transition-colors"
                           >
                             Edit
                           </button>
