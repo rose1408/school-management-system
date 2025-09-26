@@ -1,6 +1,45 @@
 import { NextResponse } from 'next/server';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+
+// GET - Fetch all schedules
+export async function GET() {
+  try {
+    console.log('🔍 GET /api/schedules: Starting fetch');
+    
+    if (!db) {
+      console.error('❌ Firebase database not initialized');
+      return NextResponse.json({ 
+        error: 'Database connection failed',
+        details: 'Firebase not properly initialized' 
+      }, { status: 500 });
+    }
+
+    const schedulesRef = collection(db, 'schedules');
+    const snapshot = await getDocs(schedulesRef);
+    
+    const schedules = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    console.log('✅ GET /api/schedules: Found', schedules.length, 'schedules');
+    
+    return NextResponse.json({ 
+      schedules,
+      count: schedules.length,
+      message: 'Schedules fetched successfully'
+    });
+  } catch (error) {
+    console.error('❌ GET /api/schedules Error:', error);
+    
+    return NextResponse.json({ 
+      error: 'Failed to fetch schedules',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
+  }
+}
 
 // POST - Create a new schedule
 export async function POST(request: Request) {

@@ -70,6 +70,13 @@ export default function TeachersPage() {
   const schedulesPerPage = 15;
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
 
+  // Debug: Log schedules data whenever it changes
+  useEffect(() => {
+    console.log('🔍 DEBUG: Schedules state updated:', schedules);
+    console.log('🔍 DEBUG: Schedules loading:', schedulesLoading);
+    console.log('🔍 DEBUG: Schedules error:', schedulesError);
+  }, [schedules, schedulesLoading, schedulesError]);
+
   // Reset pagination when teacher selection changes
   useEffect(() => {
     setCurrentPage(1);
@@ -194,6 +201,49 @@ export default function TeachersPage() {
               Add Schedule
             </button>
           </div>
+        </div>
+
+        {/* Debug Information */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Debug Information</h2>
+            <button
+              onClick={async () => {
+                try {
+                  console.log('🧪 Testing API fetch...');
+                  const response = await fetch('/api/schedules');
+                  const data = await response.json();
+                  console.log('🧪 API Response:', data);
+                  alert(`API Test: Found ${data.count || 0} schedules. Check console for details.`);
+                } catch (error) {
+                  console.error('🧪 API Test Error:', error);
+                  alert('API Test Failed - Check console');
+                }
+              }}
+              className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700"
+            >
+              Test API
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <strong>Schedules Loading:</strong> {schedulesLoading ? 'Yes' : 'No'}
+            </div>
+            <div>
+              <strong>Schedules Error:</strong> {schedulesError || 'None'}
+            </div>
+            <div>
+              <strong>Total Schedules:</strong> {schedules.length}
+            </div>
+          </div>
+          {schedules.length > 0 && (
+            <div className="mt-4">
+              <strong>Schedule Data:</strong>
+              <pre className="bg-gray-100 p-2 rounded text-xs mt-2 overflow-auto max-h-40">
+                {JSON.stringify(schedules, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
 
         {/* Teachers Grid */}
