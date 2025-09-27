@@ -1060,7 +1060,19 @@ export default function TeachersPage() {
                       className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
                     >
                       {/* Clean Card Content */}
-                      <div className="p-6">
+                      <div className="p-6 relative">
+                        {/* Edit Button - Top Right */}
+                        <button
+                          onClick={() => {
+                            setEditingTeacher(teacher);
+                            setIsModalOpen(true);
+                          }}
+                          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          title="Edit Teacher"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+
                         <div className="flex items-center gap-3 mb-4">
                           <div className={`w-12 h-12 ${instrumentColor} rounded-full flex items-center justify-center text-white font-bold text-lg`}>
                             {teacher.firstName.charAt(0)}{teacher.lastName.charAt(0)}
@@ -1112,19 +1124,6 @@ export default function TeachersPage() {
                             className="flex-1 px-3 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors font-medium"
                           >
                             Add Schedule
-                          </button>
-                        </div>
-                        
-                        <div className="flex justify-center pt-2">
-                          <button
-                            onClick={() => {
-                              setEditingTeacher(teacher);
-                              setIsModalOpen(true);
-                            }}
-                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                            title="Edit Teacher"
-                          >
-                            <Edit className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
