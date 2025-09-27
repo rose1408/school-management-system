@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, Edit, Trash2, Clock, MapPin, User, RefreshCw } from "lucide-react";
+import { collection, getDocs, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useRealtimeTeachers } from "@/hooks/useRealtimeTeachers";
 
 interface ScheduleItem {
   id: string;
@@ -12,19 +15,9 @@ interface ScheduleItem {
   time: string;
   day: string;
   grade: string;
-  isFromTeacher?: boolean; // Flag to identify schedules from teacher management
+  isFromTeacher?: boolean;
   teacherId?: string;
   originalScheduleId?: string;
-}
-
-// Teacher interfaces (copied from teachers page)
-interface Teacher {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  instruments: string[];
-  employeeId: string;
 }
 
 interface TeacherSchedule {
@@ -45,183 +38,67 @@ interface TeacherSchedule {
 }
 
 export default function SchedulePage() {
-  // Teacher data (would typically come from a shared state or API)
-  const [teachers] = useState<Teacher[]>([
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      email: "sarah.johnson@school.com",
-      phone: "(555) 123-4567",
-      instruments: ["Piano", "Guitar", "Violin"],
-      employeeId: "TCH001"
-    },
-    {
-      id: "2",
-      name: "Ms. Emily Chen",
-      email: "emily.chen@school.com",
-      phone: "(555) 234-5678",
-      instruments: ["Flute", "Saxophone", "Clarinet"],
-      employeeId: "TCH002"
-    },
-    {
-      id: "3",
-      name: "Dr. Michael Brown",
-      email: "michael.brown@school.com",
-      phone: "(555) 345-6789",
-      instruments: ["Drums", "Bass Guitar", "Percussion"],
-      employeeId: "TCH003"
-    }
-  ]);
-
-  // Teacher schedules (would typically come from a shared state or API)
-  const [teacherSchedules] = useState<TeacherSchedule[]>([
-    {
-      id: "1",
-      teacherId: "1",
-      studentName: "Emma Johnson",
-      instrument: "Piano",
-      level: "Intermediate",
-      room: "Music Room 1",
-      time: "09:00",
-      day: "Monday",
-      duration: "60 min",
-      cardNumber: "CARD-001",
-      currentLessonNumber: 3,
-      maxLessons: 10,
-      startDate: "2025-09-01",
-      isActive: true
-    },
-    {
-      id: "2",
-      teacherId: "1",
-      studentName: "Alex Smith",
-      instrument: "Guitar",
-      level: "Advance",
-      room: "Music Room 2",
-      time: "11:00",
-      day: "Monday",
-      duration: "60 min",
-      cardNumber: "CARD-002",
-      currentLessonNumber: 7,
-      maxLessons: 10,
-      startDate: "2025-09-15",
-      isActive: true
-    },
-    {
-      id: "3",
-      teacherId: "2",
-      studentName: "Sophie Chen",
-      instrument: "Flute",
-      level: "Primary",
-      room: "Music Room 3",
-      time: "10:00",
-      day: "Tuesday",
-      duration: "45 min",
-      cardNumber: "CARD-003",
-      currentLessonNumber: 1,
-      maxLessons: 10,
-      startDate: "2025-09-20",
-      isActive: true
-    },
-    {
-      id: "4",
-      teacherId: "2",
-      studentName: "Michael Brown",
-      instrument: "Saxophone",
-      level: "Intermediate",
-      room: "Music Room 1",
-      time: "14:00",
-      day: "Wednesday",
-      duration: "60 min",
-      cardNumber: "CARD-004",
-      currentLessonNumber: 9,
-      maxLessons: 10,
-      startDate: "2025-08-10",
-      isActive: true
-    },
-    {
-      id: "5",
-      teacherId: "3",
-      studentName: "Oliver Davis",
-      instrument: "Drums",
-      level: "Advance",
-      room: "Practice Room 1",
-      time: "16:00",
-      day: "Thursday",
-      duration: "60 min",
-      cardNumber: "CARD-005",
-      currentLessonNumber: 5,
-      maxLessons: 10,
-      startDate: "2025-09-05",
-      isActive: true
-    },
-    {
-      id: "6",
-      teacherId: "1",
-      studentName: "Lily Wilson",
-      instrument: "Violin",
-      level: "Primary",
-      room: "Music Room 2",
-      time: "13:00",
-      day: "Friday",
-      duration: "45 min",
-      cardNumber: "CARD-006",
-      currentLessonNumber: 2,
-      maxLessons: 10,
-      startDate: "2025-09-18",
-      isActive: true
-    },
-    {
-      id: "7",
-      teacherId: "3",
-      studentName: "James Garcia",
-      instrument: "Bass Guitar",
-      level: "Intermediate",
-      room: "Practice Room 2",
-      time: "10:00",
-      day: "Saturday",
-      duration: "60 min",
-      cardNumber: "CARD-007",
-      currentLessonNumber: 8,
-      maxLessons: 10,
-      startDate: "2025-08-25",
-      isActive: true
-    },
-    {
-      id: "8",
-      teacherId: "2",
-      studentName: "Isabella Martinez",
-      instrument: "Clarinet",
-      level: "Advance",
-      room: "Music Room 3",
-      time: "15:00",
-      day: "Sunday",
-      duration: "45 min",
-      cardNumber: "CARD-008",
-      currentLessonNumber: 6,
-      maxLessons: 10,
-      startDate: "2025-09-08",
-      isActive: true
-    }
-  ]);
-
+  // Use real teacher data from Firebase
+  const { teachers: realtimeTeachers, loading: teachersLoading } = useRealtimeTeachers();
+  
+  // Real schedules from Firebase
+  const [teacherSchedules, setTeacherSchedules] = useState<TeacherSchedule[]>([]);
   const [manualSchedules, setManualSchedules] = useState<ScheduleItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<ScheduleItem | null>(null);
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const levels = ["Preparatory", "Primary", "Intermediate", "Advance"];
 
+  // Load schedules from Firebase
+  const loadSchedules = async () => {
+    try {
+      setLoading(true);
+      const snapshot = await getDocs(collection(db, 'schedules'));
+      const schedulesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as TeacherSchedule[];
+      setTeacherSchedules(schedulesData);
+    } catch (error) {
+      console.error('Error loading schedules:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load manual schedules from Firebase (if you have a separate collection)
+  const loadManualSchedules = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'manual-schedules'));
+      const manualSchedulesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ScheduleItem[];
+      setManualSchedules(manualSchedulesData);
+    } catch (error) {
+      console.error('Error loading manual schedules:', error);
+      // If collection doesn't exist, continue with empty array
+      setManualSchedules([]);
+    }
+  };
+
+  useEffect(() => {
+    loadSchedules();
+    loadManualSchedules();
+  }, []);
+
   // Convert teacher schedules to class schedule format
   const convertTeacherSchedulesToClassSchedules = (): ScheduleItem[] => {
     return teacherSchedules.map(schedule => {
-      const teacher = teachers.find(t => t.id === schedule.teacherId);
+      const teacher = realtimeTeachers.find(t => t.id === schedule.teacherId);
       const endTime = calculateEndTime(schedule.time, schedule.duration);
       
       return {
         id: `teacher-${schedule.id}`,
         subject: `${schedule.instrument} - ${schedule.studentName}`,
-        teacher: teacher?.name || 'Unknown Teacher',
+        teacher: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Unknown Teacher',
         room: schedule.room,
         time: `${schedule.time} - ${endTime}`,
         day: schedule.day,
@@ -254,11 +131,13 @@ export default function SchedulePage() {
 
   const [allSchedules, setAllSchedules] = useState<ScheduleItem[]>([]);
 
-  // Update schedules when component mounts or teacher schedules change
+  // Update schedules when data changes
   useEffect(() => {
-    const teacherSchedulesAsClassSchedules = convertTeacherSchedulesToClassSchedules();
-    setAllSchedules([...teacherSchedulesAsClassSchedules, ...manualSchedules]);
-  }, [teacherSchedules, manualSchedules, teachers]);
+    if (!teachersLoading && realtimeTeachers.length > 0) {
+      const teacherSchedulesAsClassSchedules = convertTeacherSchedulesToClassSchedules();
+      setAllSchedules([...teacherSchedulesAsClassSchedules, ...manualSchedules]);
+    }
+  }, [teacherSchedules, manualSchedules, realtimeTeachers, teachersLoading]);
 
   const handleAddSchedule = () => {
     setEditingSchedule(null);
@@ -278,7 +157,7 @@ export default function SchedulePage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteSchedule = (id: string) => {
+  const handleDeleteSchedule = async (id: string) => {
     const schedule = allSchedules.find(s => s.id === id);
     if (schedule?.isFromTeacher) {
       const confirmed = window.confirm(
@@ -289,16 +168,37 @@ export default function SchedulePage() {
       // Add to a hidden list or handle differently
       return;
     }
-    setManualSchedules(manualSchedules.filter(schedule => schedule.id !== id));
+    
+    try {
+      // Remove 'manual-' prefix to get the actual doc ID
+      const docId = id.replace('manual-', '');
+      await deleteDoc(doc(db, 'manual-schedules', docId));
+      setManualSchedules(manualSchedules.filter(schedule => schedule.id !== id));
+    } catch (error) {
+      console.error('Error deleting manual schedule:', error);
+    }
   };
 
   const getSchedulesByDay = (day: string) => {
     return allSchedules.filter(schedule => schedule.day === day);
   };
 
-  const refreshSchedules = () => {
-    setAllSchedules(getAllSchedules());
+  const refreshSchedules = async () => {
+    await loadSchedules();
+    await loadManualSchedules();
   };
+
+  // Loading state
+  if (loading || teachersLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading schedules...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -461,32 +361,38 @@ export default function SchedulePage() {
         <ScheduleModal
           schedule={editingSchedule}
           onClose={() => setIsModalOpen(false)}
-          onSave={(schedule) => {
-            if (editingSchedule) {
-              if (editingSchedule.isFromTeacher) {
-                // Create a new manual schedule as override
+          onSave={async (schedule) => {
+            try {
+              if (editingSchedule) {
+                if (editingSchedule.isFromTeacher) {
+                  // Create a new manual schedule as override
+                  const newSchedule = {
+                    ...schedule,
+                    isFromTeacher: false
+                  };
+                  const docRef = await addDoc(collection(db, 'manual-schedules'), newSchedule);
+                  setManualSchedules([...manualSchedules, { ...newSchedule, id: docRef.id }]);
+                } else {
+                  // Update existing manual schedule
+                  const docId = editingSchedule.id.replace('manual-', '');
+                  await updateDoc(doc(db, 'manual-schedules', docId), schedule);
+                  setManualSchedules(manualSchedules.map(s => s.id === schedule.id ? schedule : s));
+                }
+              } else {
+                // Add new manual schedule
                 const newSchedule = {
                   ...schedule,
-                  id: `manual-${Date.now()}`,
                   isFromTeacher: false
                 };
-                setManualSchedules([...manualSchedules, newSchedule]);
-              } else {
-                // Update existing manual schedule
-                setManualSchedules(manualSchedules.map(s => s.id === schedule.id ? schedule : s));
+                const docRef = await addDoc(collection(db, 'manual-schedules'), newSchedule);
+                setManualSchedules([...manualSchedules, { ...newSchedule, id: docRef.id }]);
               }
-            } else {
-              // Add new manual schedule
-              const newSchedule = {
-                ...schedule,
-                id: `manual-${Date.now()}`,
-                isFromTeacher: false
-              };
-              setManualSchedules([...manualSchedules, newSchedule]);
+              setIsModalOpen(false);
+            } catch (error) {
+              console.error('Error saving schedule:', error);
             }
-            setIsModalOpen(false);
           }}
-          teachers={teachers}
+          teachers={realtimeTeachers}
           levels={levels}
         />
       )}
@@ -499,7 +405,15 @@ interface ScheduleModalProps {
   schedule: ScheduleItem | null;
   onClose: () => void;
   onSave: (schedule: ScheduleItem) => void;
-  teachers: Teacher[];
+  teachers: Array<{
+    id?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    instrument: string;
+    address: string;
+  }>;
   levels: string[];
 }
 
@@ -567,7 +481,9 @@ function ScheduleModal({ schedule, onClose, onSave, teachers, levels }: Schedule
             >
               <option value="">Select a teacher</option>
               {teachers.map(teacher => (
-                <option key={teacher.id} value={teacher.name}>{teacher.name}</option>
+                <option key={teacher.id} value={`${teacher.firstName} ${teacher.lastName}`}>
+                  {teacher.firstName} {teacher.lastName}
+                </option>
               ))}
               <option value="Other">Other (Custom)</option>
             </select>
