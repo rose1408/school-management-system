@@ -51,6 +51,27 @@ export default function SchedulePage() {
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const levels = ["Preparatory", "Primary", "Intermediate", "Advance"];
 
+  // Get instrument color function (same as teachers page)
+  const getInstrumentColor = (instrument: string) => {
+    const colors: { [key: string]: string } = {
+      'Piano': 'bg-blue-500',
+      'Guitar': 'bg-red-500',
+      'Violin': 'bg-purple-500',
+      'Drums': 'bg-orange-500',
+      'Flute': 'bg-green-500',
+      'Saxophone': 'bg-yellow-500',
+      'Trumpet': 'bg-pink-500',
+      'Cello': 'bg-indigo-500',
+      'Clarinet': 'bg-teal-500',
+      'Bass': 'bg-gray-500',
+      'Primary': 'bg-green-500',
+      'Intermediate': 'bg-blue-500',
+      'Advance': 'bg-purple-500',
+      'Preparatory': 'bg-orange-500',
+    };
+    return colors[instrument] || 'bg-gray-400';
+  };
+
   // Load schedules from Firebase
   const loadSchedules = async () => {
     try {
@@ -201,157 +222,224 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-2 hover:bg-white/20 rounded-lg transition-colors">
-              <ArrowLeft className="h-6 w-6 text-blue-600" />
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Class Schedule Management</h1>
-              <p className="text-gray-600">Unified view of all teacher schedules and class timings</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={refreshSchedules}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
-            <button
-              onClick={handleAddSchedule}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="h-5 w-5" />
-              Add Manual Schedule
-            </button>
-          </div>
-        </div>
-
-        {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 rounded-full p-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-blue-800 mb-1">Auto-Synchronized Schedule</h3>
-              <p className="text-blue-700 text-sm">
-                This view automatically displays all teacher schedules from the Teacher Management system. 
-                You can reschedule classes or add additional manual schedules as needed.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Weekly Schedule Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          {days.map(day => (
-            <div key={day} className="bg-white rounded-xl shadow-lg p-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center border-b pb-2">
-                {day}
-              </h2>
-              <div className="space-y-3">
-                {getSchedulesByDay(day)
-                  .sort((a, b) => {
-                    const timeA = a.time.split(' - ')[0];
-                    const timeB = b.time.split(' - ')[0];
-                    return timeA.localeCompare(timeB);
-                  })
-                  .map(schedule => (
-                  <div 
-                    key={schedule.id} 
-                    className={`rounded-lg p-3 border ${
-                      schedule.isFromTeacher 
-                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
-                        : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800 text-sm">{schedule.subject}</h3>
-                        {schedule.isFromTeacher && (
-                          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mt-1">
-                            Teacher Schedule
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => handleEditSchedule(schedule)}
-                          className="p-1 hover:bg-blue-100 rounded"
-                          title={schedule.isFromTeacher ? "Reschedule (creates override)" : "Edit schedule"}
-                        >
-                          <Edit className="h-3 w-3 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSchedule(schedule.id)}
-                          className="p-1 hover:bg-red-100 rounded"
-                          title={schedule.isFromTeacher ? "Hide from view" : "Delete schedule"}
-                        >
-                          <Trash2 className="h-3 w-3 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        <span>{schedule.teacher}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{schedule.time}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>{schedule.room}</span>
-                      </div>
-                      <div className={`font-medium text-xs ${
-                        schedule.isFromTeacher ? 'text-green-700' : 'text-blue-600'
-                      }`}>
-                        {schedule.grade}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {getSchedulesByDay(day).length === 0 && (
-                  <div className="text-gray-400 text-center py-8 text-sm">
-                    No classes scheduled
-                  </div>
-                )}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Clean Header */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8 p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link 
+                href="/" 
+                className="p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-lg"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-800">
+                  Class Schedule Management
+                </h1>
+                <p className="text-gray-600 mt-2 text-lg">
+                  Unified view of all teacher schedules synchronized from Teacher Management
+                </p>
               </div>
             </div>
-          ))}
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={refreshSchedules}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+              <button
+                onClick={handleAddSchedule}
+                className="flex items-center gap-3 px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-lg font-semibold"
+              >
+                <Plus className="h-5 w-5" />
+                Add Manual Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Clean Schedules Overview */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+          <div className="p-8 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Schedules Overview
+                </h2>
+                <p className="text-gray-600 mt-2">
+                  {allSchedules.length} total schedules synchronized from Teacher Management
+                </p>
+              </div>
+              <div className="bg-gray-100 rounded-xl p-3">
+                <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-8">
+            {allSchedules.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-3">No schedules found</h3>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Add some schedules in Teacher Management to see them synchronized here.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Clean Schedule Cards Grid - Same as Teachers Page */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
+                  {allSchedules.map((schedule) => {
+                    const instrumentColor = getInstrumentColor(schedule.grade);
+                    return (
+                      <div 
+                        key={schedule.id} 
+                        className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* Card Content */}
+                        <div className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`w-10 h-10 ${instrumentColor} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+                              {schedule.day.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="text-sm font-bold text-gray-800">
+                                {schedule.day}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {schedule.time}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold text-gray-800">
+                              {schedule.subject}
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span className="text-gray-600">{schedule.teacher}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="text-gray-600">{schedule.room}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-3 h-3 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                              </svg>
+                              <span className="text-gray-600">{schedule.grade}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div className={`w-2 h-2 ${schedule.isFromTeacher ? 'bg-green-500' : 'bg-blue-500'} rounded-full`}></div>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleEditSchedule(schedule)}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title={schedule.isFromTeacher ? "Reschedule (creates override)" : "Edit Schedule"}
+                                >
+                                  <Edit className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSchedule(schedule.id)}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title={schedule.isFromTeacher ? "Hide from view" : "Delete Schedule"}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                            {schedule.isFromTeacher && (
+                              <div className="mt-2">
+                                <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                  Teacher Schedule
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Summary Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{allSchedules.length}</div>
-            <div className="text-gray-600">Total Classes</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-green-600 mb-2">
-              {allSchedules.filter(s => s.isFromTeacher).length}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-blue-500 mb-2">{allSchedules.length}</div>
+                <div className="text-gray-600 font-medium">Total Classes</div>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-blue-500 rounded-full"></div>
+              </div>
             </div>
-            <div className="text-gray-600">Teacher Schedules</div>
           </div>
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {manualSchedules.length}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-green-500 mb-2">
+                  {allSchedules.filter(s => s.isFromTeacher).length}
+                </div>
+                <div className="text-gray-600 font-medium">Teacher Schedules</div>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-green-500 rounded-full"></div>
+              </div>
             </div>
-            <div className="text-gray-600">Manual Schedules</div>
           </div>
-          <div className="bg-white rounded-xl p-6 text-center shadow-lg">
-            <div className="text-3xl font-bold text-orange-600 mb-2">
-              {new Set(allSchedules.map(s => s.teacher)).size}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-purple-500 mb-2">
+                  {manualSchedules.length}
+                </div>
+                <div className="text-gray-600 font-medium">Manual Schedules</div>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-purple-500 rounded-full"></div>
+              </div>
             </div>
-            <div className="text-gray-600">Active Teachers</div>
+          </div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-3xl font-bold text-orange-500 mb-2">
+                  {new Set(allSchedules.map(s => s.teacher)).size}
+                </div>
+                <div className="text-gray-600 font-medium">Active Teachers</div>
+              </div>
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <div className="w-6 h-6 bg-orange-500 rounded-full"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
