@@ -1358,6 +1358,10 @@ export default function TeachersPage() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<TeacherSchedule | null>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+  
   const [modalState, setModalState] = useState<ModalState>({
     show: false,
     type: 'success',
@@ -1659,6 +1663,34 @@ export default function TeachersPage() {
 
   const getTeacherSchedule = (teacherId: string) => {
     return schedules.filter(schedule => schedule.teacherId === teacherId);
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(schedules.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSchedules = schedules.slice(startIndex, endIndex);
+
+  // Page change handlers
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to schedules section
+    const schedulesSection = document.getElementById('schedules-overview');
+    if (schedulesSection) {
+      schedulesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
   };
 
   const handleViewSchedule = (teacher: Teacher) => {
@@ -2043,7 +2075,7 @@ export default function TeachersPage() {
         </div>
 
         {/* Schedules Overview */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
+        <div id="schedules-overview" className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
           <div className="p-8 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -2060,7 +2092,7 @@ export default function TeachersPage() {
           
           <div className="p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
-              {schedules.slice(0, 12).map(schedule => {
+              {paginatedSchedules.map(schedule => {
                 const teacher = realtimeTeachers.find(t => t.id === schedule.teacherId);
                 const dayInitial = schedule.day.charAt(0).toUpperCase();
                 
@@ -2123,40 +2155,64 @@ export default function TeachersPage() {
             </div>
             
             {/* Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50">
-              <div className="text-sm text-slate-600">
-                Showing 1 to {Math.min(12, schedules.length)} of {schedules.length} schedules
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled
-                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-1">
-                  <button className="px-3 py-2 text-sm font-medium rounded-lg transition-colors bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg">
-                    1
-                  </button>
-                  {schedules.length > 12 && (
-                    <>
-                      <button className="px-3 py-2 text-sm font-medium rounded-lg transition-colors text-slate-600 bg-white border border-slate-300 hover:bg-slate-50">
-                        2
-                      </button>
-                      <button className="px-3 py-2 text-sm font-medium rounded-lg transition-colors text-slate-600 bg-white border border-slate-300 hover:bg-slate-50">
-                        3
-                      </button>
-                    </>
-                  )}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50">
+                <div className="text-sm text-slate-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, schedules.length)} of {schedules.length} schedules
                 </div>
-                <button
-                  className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  disabled={schedules.length <= 12}
-                >
-                  Next
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goToPrevPage}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {[...Array(totalPages)].map((_, index) => {
+                      const page = index + 1;
+                      // Show first, last, current, and adjacent pages
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => goToPage(page)}
+                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === page
+                                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                                : 'text-slate-600 bg-white border border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return (
+                          <span key={page} className="px-2 text-slate-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
         {/* ========================================= */}
