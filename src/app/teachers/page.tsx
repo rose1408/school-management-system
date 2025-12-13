@@ -1360,7 +1360,7 @@ export default function TeachersPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 6; // Temporarily reduced for testing pagination
   
   const [modalState, setModalState] = useState<ModalState>({
     show: false,
@@ -2176,62 +2176,69 @@ export default function TeachersPage() {
             </div>
             
             {/* Pagination */}
-            {totalPages > 1 && (
+            {schedules.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/50">
                 <div className="text-sm text-slate-600">
                   Showing {startIndex + 1} to {Math.min(endIndex, schedules.length)} of {schedules.length} schedules
+                  {totalPages > 1 && ` (Page ${currentPage} of ${totalPages})`}
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={goToPrevPage}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {[...Array(totalPages)].map((_, index) => {
-                      const page = index + 1;
-                      // Show first, last, current, and adjacent pages
-                      if (
-                        page === 1 ||
-                        page === totalPages ||
-                        (page >= currentPage - 1 && page <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={page}
-                            onClick={() => goToPage(page)}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                              currentPage === page
-                                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
-                                : 'text-slate-600 bg-white border border-slate-300 hover:bg-slate-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        );
-                      } else if (
-                        page === currentPage - 2 ||
-                        page === currentPage + 2
-                      ) {
-                        return (
-                          <span key={page} className="px-2 text-slate-400">
-                            ...
-                          </span>
-                        );
-                      }
-                      return null;
-                    })}
+                {totalPages > 1 ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={goToPrevPage}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {[...Array(totalPages)].map((_, index) => {
+                        const page = index + 1;
+                        // Show first, last, current, and adjacent pages
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => goToPage(page)}
+                              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                currentPage === page
+                                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                                  : 'text-slate-600 bg-white border border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        } else if (
+                          (page === currentPage - 2 || page === currentPage + 2) &&
+                          totalPages > 5
+                        ) {
+                          return (
+                            <span key={page} className="px-2 text-slate-400">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
                   </div>
-                  <button
-                    onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
+                ) : (
+                  <div className="text-sm text-slate-500">
+                    All schedules shown on one page
+                  </div>
+                )}
               </div>
             )}
           </div>
