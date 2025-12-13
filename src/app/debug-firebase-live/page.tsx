@@ -1,22 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-// Dynamic Firebase imports
-let firestore: any = null;
-let collection: any = null;
-let getDocs: any = null;
-
-async function initFirebaseIfNeeded() {
-  if (!firestore) {
-    const { db } = await import('@/lib/firebase');
-    const firestoreModule = await import('firebase/firestore');
-    
-    firestore = db;
-    collection = firestoreModule.collection;
-    getDocs = firestoreModule.getDocs;
-  }
-}
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function DebugFirebaseLive() {
   const [status, setStatus] = useState('Initializing...');
@@ -45,10 +31,9 @@ export default function DebugFirebaseLive() {
       setEnvVars(env);
       
       setStatus('🔥 Initializing Firebase...');
-      await initFirebaseIfNeeded();
       
       setStatus('📚 Testing Firestore connection...');
-      const teachersSnapshot = await getDocs(collection(firestore, 'teachers'));
+      const teachersSnapshot = await getDocs(collection(db, 'teachers'));
       const teachersData = teachersSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
