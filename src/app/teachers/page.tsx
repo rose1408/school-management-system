@@ -774,8 +774,13 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
   // New state for recurring schedule functionality
   const [recurringWeeks, setRecurringWeeks] = useState(3);
   const [previewSchedules, setPreviewSchedules] = useState<any[]>([]);
-  const [scheduleSlots, setScheduleSlots] = useState([
-    { day: formData.day, time: formData.time, date: formData.startDate, lessonNumber: schedule?.currentLessonNumber || 1 }
+  const [scheduleSlots, setScheduleSlots] = useState(() => [
+    { 
+      day: schedule?.day || 'Monday', 
+      time: schedule?.time || '09:00', 
+      date: schedule?.startDate || new Date().toISOString().split('T')[0], 
+      lessonNumber: schedule?.currentLessonNumber || 1 
+    }
   ]);
 
   // Student suggestions state
@@ -791,13 +796,33 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
   // ========================================
   useEffect(() => {
     if (schedule) {
-      // When editing, set the schedule slot with the correct lesson number
+      console.log('ScheduleModal: Editing schedule with lesson number:', schedule.currentLessonNumber);
+      // When editing, update both form data and schedule slots with correct lesson number
+      setFormData(prev => ({
+        ...prev,
+        teacherId: schedule.teacherId,
+        studentName: schedule.studentName,
+        instrument: schedule.instrument,
+        level: schedule.level,
+        room: schedule.room,
+        time: schedule.time,
+        day: schedule.day,
+        duration: schedule.duration,
+        cardNumber: schedule.cardNumber,
+        currentLessonNumber: schedule.currentLessonNumber,
+        maxLessons: schedule.maxLessons || 10,
+        startDate: schedule.startDate,
+        isActive: schedule.isActive ?? true
+      }));
+      
       setScheduleSlots([{
         day: schedule.day,
         time: schedule.time,
         date: schedule.startDate,
         lessonNumber: schedule.currentLessonNumber
       }]);
+    } else {
+      console.log('ScheduleModal: Creating new schedule');
     }
   }, [schedule]);
 
