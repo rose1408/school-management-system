@@ -1671,8 +1671,20 @@ export default function TeachersPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedSchedules = schedules.slice(startIndex, endIndex);
 
+  // Debug pagination
+  console.log('Pagination Debug:', {
+    totalSchedules: schedules.length,
+    itemsPerPage,
+    currentPage,
+    totalPages,
+    startIndex,
+    endIndex,
+    paginatedCount: paginatedSchedules.length
+  });
+
   // Page change handlers
   const goToPage = (page: number) => {
+    console.log(`Navigating to page ${page}. Current: ${currentPage}, Total: ${totalPages}`);
     setCurrentPage(page);
     // Scroll to schedules section
     const schedulesSection = document.getElementById('schedules-overview');
@@ -1682,16 +1694,25 @@ export default function TeachersPage() {
   };
 
   const goToNextPage = () => {
+    console.log(`Next page clicked. Current: ${currentPage}, Total: ${totalPages}`);
     if (currentPage < totalPages) {
       goToPage(currentPage + 1);
     }
   };
 
   const goToPrevPage = () => {
+    console.log(`Prev page clicked. Current: ${currentPage}, Total: ${totalPages}`);
     if (currentPage > 1) {
       goToPage(currentPage - 1);
     }
   };
+
+  // Reset pagination when schedules data changes
+  useEffect(() => {
+    if (schedules.length > 0 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [schedules.length, currentPage, totalPages]);
 
   const handleViewSchedule = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
