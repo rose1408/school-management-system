@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
+
+// Dynamic Firebase imports
+let firestore: any = null;
+
+async function initFirebaseIfNeeded() {
+  if (!firestore) {
+    const { db } = await import('@/lib/firebase');
+    firestore = db;
+  }
+}
 
 // Simple, direct Firebase connection test
 export default function ScheduleTest() {
@@ -18,13 +27,14 @@ export default function ScheduleTest() {
       setStatus('Connecting to Firebase...');
       console.log('🔍 Testing Firebase connection directly');
       
-      // Import Firebase functions dynamically
+      // Initialize Firebase and import functions dynamically
+      await initFirebaseIfNeeded();
       const { collection, getDocs } = await import('firebase/firestore');
       
-      console.log('🔍 DB object:', db);
+      console.log('🔍 DB object:', firestore);
       console.log('🔍 Attempting to fetch schedules...');
       
-      const snapshot = await getDocs(collection(db, 'schedules'));
+      const snapshot = await getDocs(collection(firestore, 'schedules'));
       const schedulesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()

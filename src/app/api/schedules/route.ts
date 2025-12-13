@@ -1,12 +1,43 @@
 import { NextResponse } from 'next/server';
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
+// Conditional Firebase import to avoid build-time issues
+let db: any = null;
+let addDoc: any = null;
+let getDocs: any = null;
+let collection: any = null;
+let serverTimestamp: any = null;
+
+// Initialize Firebase only when needed
+const initFirebaseIfNeeded = async () => {
+  if (!db) {
+    try {
+      const { db: firebaseDb } = await import('@/lib/firebase');
+      const { 
+        addDoc: firestoreAddDoc, 
+        getDocs: firestoreGetDocs, 
+        collection: firestoreCollection, 
+        serverTimestamp: firestoreServerTimestamp 
+      } = await import('firebase/firestore');
+      
+      db = firebaseDb;
+      addDoc = firestoreAddDoc;
+      getDocs = firestoreGetDocs;
+      collection = firestoreCollection;
+      serverTimestamp = firestoreServerTimestamp;
+    } catch (error) {
+      console.error('Failed to initialize Firebase:', error);
+      throw error;
+    }
+  }
+};
 
 // GET - Fetch all schedules
 export async function GET(request: Request) {
   try {
     console.log('🔍 GET /api/schedules: Starting fetch - Method:', request.method);
     console.log('🔍 GET /api/schedules: URL:', request.url);
+    
+    await initFirebaseIfNeeded();
     
     if (!db) {
       console.error('❌ Firebase database not initialized');
@@ -20,7 +51,7 @@ export async function GET(request: Request) {
     console.log('📊 Getting schedules from Firestore...');
     const snapshot = await getDocs(schedulesRef);
     
-    const schedules = snapshot.docs.map(doc => ({
+    const schedules = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }));
@@ -50,6 +81,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     console.log('🔄 Schedule API: Starting request processing');
+    
+    await initFirebaseIfNeeded();
     
     // Check if Firebase is initialized
     if (!db) {

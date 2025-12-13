@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Teachers collection
+    match /teachers/{document} {
+      allow read, write: if true; // Allow all access for now - you can add authentication later
+    }
+    
+    // Students collection
+    match /students/{document} {
+      allow read, write: if true; // Allow all access for now - you can add authentication later
+    }
+    
+    // Schedules collection
+    match /schedules/{document} {
+      allow read, write: if true; // Allow all access for now - you can add authentication later
+    }
+    
+    // Any other collections
+    match /{document=**} {
+      allow read, write: if false; // Deny access to any other collections
+    }
+  }
+}

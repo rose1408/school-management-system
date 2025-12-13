@@ -3,30 +3,31 @@ import { Calendar, Users, FileText, GraduationCap, UserCheck } from "lucide-reac
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <header className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <GraduationCap className="h-12 w-12 text-blue-600" />
-                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-          School Management System
-          <span className="block text-lg md:text-xl font-normal text-blue-200 mt-2">
-            🚀 Now with Auto-Deployment & Firebase Real-time Database
-          </span>
-        </h1>
+        <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8 rounded-2xl shadow-xl mb-12">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <GraduationCap className="h-10 w-10 text-white" />
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold">
+                School Management System
+              </h1>
+            </div>
+            <p className="text-blue-200 text-lg mt-4">Manage schedules, students, teachers, and administrative tasks</p>
           </div>
-          <p className="text-xl text-gray-600">Manage schedules, students, and administrative tasks</p>
-        </header>
+        </div>
 
         {/* Main Navigation Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
           
           {/* Class Schedule */}
           <Link href="/schedule" className="group">
-            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 border border-gray-100">
-              <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6 mx-auto">
-                <Calendar className="h-8 w-8 text-blue-600" />
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 border border-gray-100 hover:border-blue-200">
+              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl mb-6 mx-auto">
+                <Calendar className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Class Schedule</h2>
               <p className="text-gray-600 text-center leading-relaxed">
@@ -37,9 +38,9 @@ export default function Home() {
 
           {/* Teachers Schedule */}
           <Link href="/teachers" className="group">
-            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 border border-gray-100">
-              <div className="flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-6 mx-auto">
-                <UserCheck className="h-8 w-8 text-orange-600" />
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 border border-gray-100 hover:border-orange-200">
+              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl mb-6 mx-auto">
+                <UserCheck className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Teachers Schedule</h2>
               <p className="text-gray-600 text-center leading-relaxed">
@@ -49,27 +50,28 @@ export default function Home() {
           </Link>
 
           {/* Student Information System */}
+                    {/* Student Information System */}
           <Link href="/students" className="group">
-            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 border border-gray-100">
-              <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-6 mx-auto">
-                <Users className="h-8 w-8 text-green-600" />
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 border border-gray-100 hover:border-green-200">
+              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-2xl mb-6 mx-auto">
+                <Users className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Student Information</h2>
               <p className="text-gray-600 text-center leading-relaxed">
-                Manage student records, enrollment forms, and academic information
+                Comprehensive student database with Google Sheets integration
               </p>
             </div>
           </Link>
 
           {/* Terms & Conditions */}
           <Link href="/terms" className="group">
-            <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 group-hover:scale-105 border border-gray-100">
-              <div className="flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-6 mx-auto">
-                <FileText className="h-8 w-8 text-purple-600" />
+            <div className="bg-white rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 border border-gray-100 hover:border-purple-200">
+              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl mb-6 mx-auto">
+                <FileText className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">Terms & Conditions</h2>
               <p className="text-gray-600 text-center leading-relaxed">
-                Digital signature platform for parents and guardians
+                Digital signature platform for enrollment agreements
               </p>
             </div>
           </Link>

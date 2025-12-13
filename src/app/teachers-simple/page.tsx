@@ -1,9 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import Link from 'next/link';
+
+// Dynamic Firebase imports
+let firestore: any = null;
+let collection: any = null;
+let getDocs: any = null;
+
+async function initFirebaseIfNeeded() {
+  if (!firestore) {
+    const { db } = await import('@/lib/firebase');
+    const firestoreModule = await import('firebase/firestore');
+    
+    firestore = db;
+    collection = firestoreModule.collection;
+    getDocs = firestoreModule.getDocs;
+  }
+}
 
 export default function SimpleTeachersTest() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -19,16 +33,18 @@ export default function SimpleTeachersTest() {
     try {
       console.log('🔍 Loading teachers and schedules...');
       
+      await initFirebaseIfNeeded();
+      
       // Load teachers
-      const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-      const teachersData = teachersSnapshot.docs.map(doc => ({
+      const teachersSnapshot = await getDocs(collection(firestore, 'teachers'));
+      const teachersData = teachersSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       }));
       
       // Load schedules  
-      const schedulesSnapshot = await getDocs(collection(db, 'schedules'));
-      const schedulesData = schedulesSnapshot.docs.map(doc => ({
+      const schedulesSnapshot = await getDocs(collection(firestore, 'schedules'));
+      const schedulesData = schedulesSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       }));

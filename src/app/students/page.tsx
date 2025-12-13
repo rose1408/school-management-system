@@ -34,6 +34,38 @@ export default function StudentsPage() {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   
+  // Phone number formatting function
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return '';
+    
+    // Remove all non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Handle different Philippine phone number formats
+    if (cleaned.length === 10 && cleaned.startsWith('9')) {
+      // 9XX XXX XXXX -> +63 9XX XXX XXXX
+      return `+63 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+    } else if (cleaned.length === 11 && cleaned.startsWith('09')) {
+      // 09XX XXX XXXX -> +63 9XX XXX XXXX
+      return `+63 ${cleaned.slice(1, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
+    } else if (cleaned.length === 13 && cleaned.startsWith('639')) {
+      // 639XX XXX XXXX -> +63 9XX XXX XXXX
+      return `+63 ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
+    } else if (cleaned.length === 12 && cleaned.startsWith('63')) {
+      // 639XX XXX XXXX -> +63 9XX XXX XXXX
+      return `+63 ${cleaned.slice(2, 5)} ${cleaned.slice(5, 8)} ${cleaned.slice(8)}`;
+    } else if (cleaned.length >= 7) {
+      // Fallback: try to format as XXX XXX XXXX for other formats
+      const match = cleaned.match(/(\d{3})(\d{3})(\d{4})/);
+      if (match) {
+        return `${match[1]} ${match[2]} ${match[3]}`;
+      }
+    }
+    
+    // Return original if no format matches
+    return phone;
+  };
+  
   // Modern modal states
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -47,6 +79,17 @@ export default function StudentsPage() {
     type: 'success',
     title: '',
     message: ''
+  });
+
+  // Add loading state for operations
+  const [operationLoading, setOperationLoading] = useState<{
+    isLoading: boolean;
+    message: string;
+    type: 'saving' | 'updating' | 'deleting' | 'syncing' | '';
+  }>({
+    isLoading: false,
+    message: '',
+    type: ''
   });
   
   // Pagination states for performance
@@ -84,26 +127,7 @@ export default function StudentsPage() {
     setLastSyncTime(savedSyncTime);
   }, []);
 
-  // Set up auto-sync with proper dependencies
-  useEffect(() => {
-    let autoSyncInterval: NodeJS.Timeout | null = null;
-    
-    if (googleSheetId.trim()) {
-      console.log('Setting up auto-sync for Google Sheet:', googleSheetId);
-      autoSyncInterval = setInterval(() => {
-        console.log('Auto-syncing with Google Sheets...');
-        syncWithGoogleSheets(false); // Don't show alert for auto-sync
-      }, 5 * 60 * 1000); // Auto-sync every 5 minutes
-    }
-    
-    // Cleanup interval on component unmount or when googleSheetId changes
-    return () => {
-      if (autoSyncInterval) {
-        clearInterval(autoSyncInterval);
-        console.log('Cleared auto-sync interval');
-      }
-    };
-  }, [googleSheetId]); // Remove syncWithGoogleSheets dependency to avoid circular reference
+  // REMOVED AUTO-SYNC - Only manual sync to prevent duplicates
 
   // Remove the old loadStudents function since we're using real-time data
   
@@ -182,6 +206,11 @@ export default function StudentsPage() {
       'Are you sure you want to delete this student record? This action cannot be undone.',
       async () => {
         try {
+          setOperationLoading({
+            isLoading: true,
+            message: 'Removing student record...',
+            type: 'deleting'
+          });
           const response = await fetch(`/api/students?id=${id}`, {
             method: 'DELETE'
           });
@@ -196,6 +225,12 @@ export default function StudentsPage() {
         } catch (error) {
           console.error('Error deleting student:', error);
           showModal('error', 'Delete Failed', 'An error occurred while deleting the student. Please try again.');
+        } finally {
+          setOperationLoading({
+            isLoading: false,
+            message: '',
+            type: ''
+          });
         }
       }
     );
@@ -216,6 +251,11 @@ export default function StudentsPage() {
     setIsDeleteConfirmOpen(false);
     
     try {
+      setOperationLoading({
+        isLoading: true,
+        message: `Deleting ${selectedStudents.length} students...`,
+        type: 'deleting'
+      });
       for (const studentId of selectedStudents) {
         const response = await fetch(`/api/students?id=${studentId}`, {
           method: 'DELETE'
@@ -231,6 +271,12 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error deleting students:', error);
       showModal('error', 'Batch Delete Failed', 'An error occurred while deleting students. Please try again.');
+    } finally {
+      setOperationLoading({
+        isLoading: false,
+        message: '',
+        type: ''
+      });
     }
   }, [selectedStudents, showModal]);
 
@@ -253,6 +299,8 @@ export default function StudentsPage() {
   }, [selectedStudents.length, filteredStudents]);
 
   // Google Sheets integration functions
+  // SMART SYNC: FROM Google Sheets TO Web App - Updates existing data OR creates new students when database is empty
+  // This function reads data from Google Sheets and either updates existing records or creates new ones if database is empty
   const syncWithGoogleSheets = useCallback(async (showAlert = true) => {
     if (!googleSheetId.trim()) {
       if (showAlert) {
@@ -262,6 +310,14 @@ export default function StudentsPage() {
       return;
     }
 
+    const syncId = Date.now().toString();
+    
+    setOperationLoading({
+      isLoading: true,
+      message: 'Syncing from Google Sheets...',
+      type: 'syncing'
+    });
+
     setIsLoading(true);
     try {
       // Fetch data from Google Sheets
@@ -269,195 +325,214 @@ export default function StudentsPage() {
       const data = await response.json();
 
       if (response.ok && data.students) {
-        console.log('Fetched', data.students.length, 'students from Google Sheets');
+        console.log(`[Sync ${syncId}] Fetched`, data.students.length, 'students from Google Sheets');
         
         // Get the most current students list from the real-time hook
-        const currentStudents = realtimeStudents;
-        console.log('Current students in app:', currentStudents.length);
+        const currentStudents = realtimeStudents || [];
+        console.log(`[Sync ${syncId}] Current students in app:`, currentStudents.length);
         
-        // Save/update each student in database
-        let savedCount = 0;
-        let updatedCount = 0;
+        // SMART MODE: If database is empty, create new students. Otherwise, update existing ones.
+        const isEmptyDatabase = currentStudents.length === 0;
+        console.log(`[Sync ${syncId}] Database empty: ${isEmptyDatabase}, switching to ${isEmptyDatabase ? 'CREATE' : 'UPDATE'} mode`);
+        
+        const existingUpdates = [];
+        const newStudents = [];
+        let skippedNewStudents = 0;
         
         for (const studentData of data.students) {
-          try {
-            console.log('Processing student from Google Sheets:', studentData.firstName, studentData.lastName, studentData.email);
-            
-            // Check if student exists by email, studentId, or name combination
-            // More flexible matching - prioritize email and studentId over name matching
-            let existingStudent = null;
-            
-            // First try email match (most reliable)
-            if (studentData.email && studentData.email.trim()) {
-              existingStudent = currentStudents.find(s => s.email && s.email.toLowerCase() === studentData.email.toLowerCase());
-            }
-            
-            // If no email match, try studentId
-            if (!existingStudent && studentData.studentId && studentData.studentId.trim()) {
-              existingStudent = currentStudents.find(s => s.studentId && s.studentId === studentData.studentId);
-            }
-            
-            // Only use name matching as last resort and be more strict
-            if (!existingStudent && studentData.firstName && studentData.lastName) {
-              existingStudent = currentStudents.find(s => 
-                s.firstName && s.lastName &&
-                s.firstName.toLowerCase().trim() === studentData.firstName.toLowerCase().trim() && 
-                s.lastName.toLowerCase().trim() === studentData.lastName.toLowerCase().trim()
-              );
-            }
-            
-            if (existingStudent) {
-              console.log('Found existing student, updating:', existingStudent.id);
-              // Update existing student
-              const updateResponse = await fetch('/api/students', {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  ...studentData,
-                  id: existingStudent.id
-                })
-              });
-              
-              if (updateResponse.ok) {
-                updatedCount++;
-                console.log('Successfully updated student:', studentData.firstName, studentData.lastName);
-              } else {
-                const errorData = await updateResponse.text();
-                console.error('Failed to update student:', studentData.firstName, studentData.lastName, errorData);
-              }
-            } else {
-              console.log('No existing student found, creating new student:', studentData.firstName, studentData.lastName);
-              // Create new student - ensure we have required fields
-              if (!studentData.firstName || !studentData.lastName || !studentData.email) {
-                console.warn('Skipping student with missing required fields:', studentData);
-                continue;
-              }
-              
-              const saveResponse = await fetch('/api/students', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(studentData)
-              });
-              
-              if (saveResponse.ok) {
-                savedCount++;
-                console.log('Successfully created new student:', studentData.firstName, studentData.lastName);
-              } else {
-                const errorData = await saveResponse.text();
-                console.error('Failed to create student:', studentData.firstName, studentData.lastName, errorData);
-                
-                // If it's a duplicate email error, try to find and update instead
-                if (errorData.includes('email') || errorData.includes('duplicate')) {
-                  console.log('Duplicate detected, trying to update existing record...');
-                  const duplicateStudent = currentStudents.find(s => 
-                    s.email && studentData.email && s.email.toLowerCase() === studentData.email.toLowerCase()
-                  );
-                  
-                  if (duplicateStudent) {
-                    const retryUpdateResponse = await fetch('/api/students', {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                        ...studentData,
-                        id: duplicateStudent.id
-                      })
-                    });
-                    
-                    if (retryUpdateResponse.ok) {
-                      updatedCount++;
-                      console.log('Successfully updated duplicate student:', studentData.firstName, studentData.lastName);
-                    }
-                  }
+          // Skip if missing required fields (email is optional for import)
+          if (!studentData.firstName || !studentData.lastName) {
+            console.warn(`[Sync ${syncId}] Skipping student with missing required fields (name):`, studentData);
+            continue;
+          }
+          
+          // Give a default email if missing
+          if (!studentData.email || studentData.email.trim() === '') {
+            studentData.email = `${studentData.firstName.toLowerCase()}.${studentData.lastName.toLowerCase()}@placeholder.local`;
+            console.log(`[Sync ${syncId}] Generated placeholder email for:`, studentData.firstName, studentData.lastName, '→', studentData.email);
+          }
+
+          if (isEmptyDatabase) {
+            // DATABASE IS EMPTY - CREATE NEW STUDENTS
+            newStudents.push({
+              ...studentData,
+              // Generate temporary ID for frontend
+              id: `imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              // Keep existing student ID from Google Sheets, or let backend generate new one
+              studentId: studentData.studentId || '',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              // Ensure required fields have defaults
+              enrollmentDate: studentData.enrollmentDate || new Date().toISOString().split('T')[0],
+              status: studentData.status || 'active'
+            });
+            console.log(`[Sync ${syncId}] Will CREATE new student:`, studentData.firstName, studentData.lastName);
+          } else {
+            // DATABASE HAS DATA - UPDATE EXISTING STUDENTS ONLY
+            const existingStudent = currentStudents.find(s => {
+              // Primary match: email (case-insensitive, trimmed)
+              if (studentData.email && s.email) {
+                const emailMatch = s.email.toLowerCase().trim() === studentData.email.toLowerCase().trim();
+                if (emailMatch) {
+                  console.log(`[Sync ${syncId}] Email match found for update:`, s.email, '→', studentData.email);
+                  return true;
                 }
               }
+              
+              // Secondary match: studentId (exact match)
+              if (studentData.studentId && s.studentId && s.studentId.trim() && studentData.studentId.trim()) {
+                const idMatch = s.studentId.trim() === studentData.studentId.trim();
+                if (idMatch) {
+                  console.log(`[Sync ${syncId}] Student ID match found for update:`, s.studentId, '→', studentData.studentId);
+                  return true;
+                }
+              }
+              
+              // Tertiary match: exact full name + phone combination (very strict)
+              if (s.firstName && s.lastName && studentData.firstName && studentData.lastName) {
+                const firstNameMatch = s.firstName.toLowerCase().trim() === studentData.firstName.toLowerCase().trim();
+                const lastNameMatch = s.lastName.toLowerCase().trim() === studentData.lastName.toLowerCase().trim();
+                const phoneMatch = s.phone && studentData.phone && s.phone.trim() === studentData.phone.trim();
+                
+                if (firstNameMatch && lastNameMatch && phoneMatch) {
+                  console.log(`[Sync ${syncId}] Full name + phone match found for update:`, `${s.firstName} ${s.lastName}`, s.phone);
+                  return true;
+                }
+              }
+              
+              return false;
+            });
+
+            if (existingStudent) {
+              // Check if any data has actually changed to avoid unnecessary updates
+              const hasChanges = 
+                existingStudent.phone !== studentData.phone ||
+                existingStudent.address !== studentData.address ||
+                existingStudent.dateOfBirth !== studentData.dateOfBirth ||
+                existingStudent.age !== studentData.age ||
+                existingStudent.parentName !== studentData.parentName ||
+                existingStudent.status !== studentData.status ||
+                existingStudent.parentPhone !== studentData.parentPhone;
+
+              if (hasChanges) {
+                existingUpdates.push({
+                  ...studentData,
+                  id: existingStudent.id,
+                  // Preserve original creation data
+                  studentId: existingStudent.studentId || studentData.studentId,
+                  createdAt: existingStudent.createdAt,
+                  updatedAt: new Date().toISOString()
+                });
+                console.log(`[Sync ${syncId}] Student needs update:`, studentData.firstName, studentData.lastName);
+              } else {
+                console.log(`[Sync ${syncId}] Student data unchanged, skipping:`, studentData.firstName, studentData.lastName);
+              }
+            } else {
+              // NEW STUDENT FOUND - Skip it in UPDATE mode
+              skippedNewStudents++;
+              console.log(`[Sync ${syncId}] SKIPPING new student (UPDATE mode):`, studentData.firstName, studentData.lastName);
+            }
+          }
+        }
+        
+        console.log(`[Sync ${syncId}] Processing: ${newStudents.length} new students, ${existingUpdates.length} updates`);
+        
+        // Process new students (only when database is empty)
+        let createdCount = 0;
+        for (const studentData of newStudents) {
+          try {
+            const createResponse = await fetch('/api/students', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                ...studentData,
+                googleSheetId: googleSheetId // Include sheet ID for backend processing
+              })
+            });
+            
+            if (createResponse.ok) {
+              createdCount++;
+              console.log(`[Sync ${syncId}] Successfully created student:`, studentData.firstName, studentData.lastName);
+            } else {
+              const errorData = await createResponse.text();
+              console.error(`[Sync ${syncId}] Failed to create student:`, studentData.firstName, studentData.lastName, errorData);
             }
           } catch (error) {
-            console.error('Error processing student:', studentData.firstName, studentData.lastName, error);
+            console.error(`[Sync ${syncId}] Error creating student:`, error);
           }
         }
         
-        // Check for students that might have been removed from Google Sheets
-        // (Optional: mark them as inactive rather than deleting)
-        let inactiveCount = 0;
-        const googleSheetEmails = data.students.map((s: Student) => s.email?.toLowerCase()).filter(Boolean);
-        const googleSheetStudentIds = data.students.map((s: Student) => s.studentId).filter(Boolean);
-        
-        for (const existingStudent of currentStudents) {
-          const stillExists = googleSheetEmails.includes(existingStudent.email?.toLowerCase()) ||
-                             googleSheetStudentIds.includes(existingStudent.studentId) ||
-                             data.students.some((gs: Student) => 
-                               gs.firstName?.toLowerCase() === existingStudent.firstName?.toLowerCase() && 
-                               gs.lastName?.toLowerCase() === existingStudent.lastName?.toLowerCase()
-                             );
-          
-          if (!stillExists && existingStudent.status === 'active') {
-            // Student no longer in Google Sheets, mark as inactive
-            try {
-              const inactiveResponse = await fetch('/api/students', {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  ...existingStudent,
-                  status: 'inactive'
-                })
-              });
-              
-              if (inactiveResponse.ok) {
-                inactiveCount++;
-                console.log('Marked student as inactive (not found in Google Sheets):', existingStudent.firstName, existingStudent.lastName);
-              }
-            } catch (error) {
-              console.error('Error marking student as inactive:', existingStudent.firstName, existingStudent.lastName, error);
+        // Process updates (only when database has existing data)
+        let updatedCount = 0;
+        for (const studentData of existingUpdates) {
+          try {
+            const updateResponse = await fetch('/api/students', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(studentData)
+            });
+            
+            if (updateResponse.ok) {
+              updatedCount++;
+              console.log(`[Sync ${syncId}] Successfully updated student:`, studentData.firstName, studentData.lastName);
+            } else {
+              const errorData = await updateResponse.text();
+              console.error(`[Sync ${syncId}] Failed to update student:`, studentData.firstName, studentData.lastName, errorData);
             }
+          } catch (error) {
+            console.error(`[Sync ${syncId}] Error updating student:`, error);
           }
         }
         
-        // Students will automatically update via real-time listener
+        // Update sync timestamp
+        const now = new Date().toISOString();
+        setLastSyncTime(now);
+        localStorage.setItem('lastSyncTime', now);
         
-        const syncTime = new Date().toLocaleString();
-        setLastSyncTime(syncTime);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('lastSyncTime', syncTime);
-        }
-        
-        console.log('Sync completed:', {
-          totalFromGoogleSheets: data.students.length,
-          newStudentsAdded: savedCount,
-          existingStudentsUpdated: updatedCount,
-          studentsMarkedInactive: inactiveCount
-        });
-        
+        // Show success message based on what actually happened
         if (showAlert) {
-          let message = `Successfully synced ${data.students.length} records from Google Sheets!\n\n`;
-          message += `• Added: ${savedCount} new students\n`;
-          message += `• Updated: ${updatedCount} existing students\n`;
-          if (inactiveCount > 0) {
-            message += `• Marked as inactive: ${inactiveCount} students (no longer in sheet)\n`;
+          if (isEmptyDatabase && createdCount > 0) {
+            showModal('success', 'Import Completed!', 
+              `Successfully imported ${createdCount} students from Google Sheets to your web app database!`);
+          } else if (updatedCount > 0 && createdCount === 0) {
+            showModal('success', 'Sync Completed', 
+              `Successfully updated ${updatedCount} existing students. ${skippedNewStudents > 0 ? `Skipped ${skippedNewStudents} new students (update mode only).` : ''}`);
+          } else if (updatedCount === 0 && createdCount === 0 && skippedNewStudents > 0) {
+            showModal('success', 'Sync Completed', 
+              `All existing student data is up to date. Found ${skippedNewStudents} new students in Google Sheets (not imported - update mode only).`);
+          } else if (updatedCount === 0 && createdCount === 0) {
+            showModal('success', 'Sync Completed', 'All student data is up to date. No changes needed.');
+          } else {
+            showModal('success', 'Sync Completed', `Created ${createdCount} new students, updated ${updatedCount} existing students.`);
           }
-          message += `\nSync completed at ${syncTime}`;
-          
-          showModal('success', 'Comprehensive Sync Complete', message);
         }
+        
+        console.log('Google Sheets sync completed:', { createdCount, updatedCount, skippedNewStudents, isEmptyDatabase });
       } else {
-        throw new Error(data.error || 'Failed to sync with Google Sheets');
+        const errorMsg = data.error || 'Unknown error occurred';
+        console.error('Failed to fetch from Google Sheets:', errorMsg);
+        if (showAlert) {
+          showModal('error', 'Sync Failed', `Failed to fetch data from Google Sheets: ${errorMsg}`);
+        }
       }
     } catch (error) {
       console.error('Sync error:', error);
       if (showAlert) {
-        showModal('error', 'Sync Failed', 'Failed to sync with Google Sheets. Please check your Sheet ID and make sure the sheet is publicly accessible.');
+        showModal('error', 'Sync Failed', 'Failed to sync with Google Sheets. Please check your configuration and try again.');
       }
     } finally {
       setIsLoading(false);
+      setOperationLoading({
+        isLoading: false,
+        message: '',
+        type: ''
+      });
     }
-  }, [googleSheetId, realtimeStudents, showModal]); // Updated dependencies to use realtimeStudents
+  }, [googleSheetId, realtimeStudents]);
 
   const saveGoogleSheetId = (sheetId: string) => {
     setGoogleSheetId(sheetId);
@@ -468,7 +543,27 @@ export default function StudentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 relative">
+      {/* Loading Overlay */}
+      {operationLoading.isLoading && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-md mx-4 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {operationLoading.type === 'saving' ? 'Saving Student' : 
+               operationLoading.type === 'updating' ? 'Updating Student' : 
+               operationLoading.type === 'deleting' ? 'Deleting Student' : 
+               operationLoading.type === 'syncing' ? 'Syncing Data' : 'Processing...'}
+            </h3>
+            <p className="text-gray-600">
+              {operationLoading.message || 'Please wait...'}
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white p-8 rounded-2xl shadow-xl mb-8">
@@ -510,7 +605,7 @@ export default function StudentsPage() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                {isLoading ? 'Syncing...' : 'Sync from Sheets'}
+                {isLoading ? 'Updating...' : 'Update from Sheets'}
               </button>
               <button
                 onClick={handleAddStudent}
@@ -522,14 +617,14 @@ export default function StudentsPage() {
             </div>
           </div>
 
-          {/* Data Safety Notice - More compact */}
+          {/* Data Safety Notice - Updated for smart sync */}
           <div className="mt-4 p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xs font-bold">ℹ</span>
               </div>
               <div className="text-blue-100 text-sm">
-                <strong className="text-white">Data Safety:</strong> Delete operations only affect your app database. Google Sheets data remains safe.
+                <strong className="text-white">Smart Sync:</strong> Imports all Google Sheets data when database is empty, or updates existing data when database has records.
               </div>
             </div>
           </div>
@@ -682,7 +777,7 @@ export default function StudentsPage() {
                     </div>
                     <div>
                       <span className="text-gray-500 text-xs">Phone:</span>
-                      <p className="font-medium text-gray-900 text-sm">{student.phone}</p>
+                      <p className="font-medium text-gray-900 text-sm">{formatPhoneNumber(student.phone || '')}</p>
                     </div>
                   </div>
 
@@ -850,26 +945,78 @@ export default function StudentsPage() {
         <StudentModal
           student={editingStudent}
           onClose={() => setIsModalOpen(false)}
+          operationLoading={operationLoading}
           onSave={async (student) => {
             try {
               const method = editingStudent ? 'PUT' : 'POST';
+              
+              // Show appropriate loading message
+              const loadingMessage = editingStudent ? 'Updating student information...' : 'Saving student to database...';
+              const loadingType = editingStudent ? 'updating' : 'saving';
+              
+              setOperationLoading({
+                isLoading: true,
+                message: loadingMessage,
+                type: loadingType
+              });
+              
+              // Prepare the data to send, including Google Sheet ID and additional form fields
+              const studentData = {
+                ...student,
+                googleSheetId: googleSheetId.trim() || '18N0O0vHScnDbuqpX4yYbUznttsf4wcjyYgdBjHWhQg4', // Your specific sheet ID
+                socialMediaConsent: student.socialMediaConsent || '',
+                howFound: student.howFound || '',
+                referralDetails: student.referralDetails || ''
+              };
+              
+              console.log('Saving student with data:', studentData);
+              
+              // Update loading message for Google Sheets step
+              if (!editingStudent) {
+                setOperationLoading({
+                  isLoading: true,
+                  message: 'Recording to Google Sheets...',
+                  type: 'saving'
+                });
+              }
+              
               const response = await fetch('/api/students', {
                 method: method,
                 headers: {
                   'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(student)
+                body: JSON.stringify(studentData)
+              });
+              
+              // Clear loading state
+              setOperationLoading({
+                isLoading: false,
+                message: '',
+                type: ''
               });
               
               if (response.ok) {
                 // Students will automatically update via real-time listener
                 setIsModalOpen(false);
-                showModal('success', 'Student Saved', `Student ${editingStudent ? 'updated' : 'added'} successfully!`);
+                
+                // Show different messages for new students vs updates
+                if (editingStudent) {
+                  showModal('success', 'Student Updated', 'Student information updated successfully!');
+                } else {
+                  showModal('success', 'Student Added Successfully!', 'Student has been added to both the local database and your Google Sheets ENROLLMENT tab!');
+                }
               } else {
                 const data = await response.json();
                 showModal('error', 'Save Failed', data.error || 'Failed to save student. Please try again.');
               }
             } catch (error) {
+              // Clear loading state on error
+              setOperationLoading({
+                isLoading: false,
+                message: '',
+                type: ''
+              });
+              
               console.error('Error saving student:', error);
               showModal('error', 'Save Failed', 'An error occurred while saving the student. Please try again.');
             }
@@ -1053,9 +1200,14 @@ interface StudentModalProps {
   student: Student | null;
   onClose: () => void;
   onSave: (student: Student) => void;
+  operationLoading: {
+    isLoading: boolean;
+    message: string;
+    type: 'saving' | 'updating' | 'deleting' | 'syncing' | '';
+  };
 }
 
-function StudentModal({ student, onClose, onSave }: StudentModalProps) {
+function StudentModal({ student, onClose, onSave, operationLoading }: StudentModalProps) {
   const [formData, setFormData] = useState<Omit<Student, 'id'>>({
     firstName: student?.firstName || '',
     lastName: student?.lastName || '',
@@ -1071,14 +1223,80 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
     status: student?.status || 'active'
   });
 
+  const [socialMediaConsent, setSocialMediaConsent] = useState('Yes');
+  const [howFound, setHowFound] = useState('');
+  const [referralDetails, setReferralDetails] = useState('');
+  const [socialMediaPlatform, setSocialMediaPlatform] = useState('');
+  
+  // Separate state for full name input to prevent cursor jumping
+  const [fullNameInput, setFullNameInput] = useState(() => {
+    if (student && student.lastName && student.firstName) {
+      return `${student.lastName}, ${student.firstName}`;
+    } else if (student && (student.firstName || student.lastName)) {
+      return `${student.lastName || ''} ${student.firstName || ''}`.trim();
+    }
+    return '';
+  });
+
+  // Sync fullNameInput when student prop changes (for editing)
+  useEffect(() => {
+    if (student) {
+      if (student.lastName && student.firstName) {
+        setFullNameInput(`${student.lastName}, ${student.firstName}`);
+      } else if (student.firstName || student.lastName) {
+        setFullNameInput(`${student.lastName || ''} ${student.firstName || ''}`.trim());
+      } else {
+        setFullNameInput('');
+      }
+    } else {
+      setFullNameInput('');
+    }
+  }, [student]);
+
+  // Calculate age when date of birth changes
+  const calculateAge = (dateOfBirth: string) => {
+    if (!dateOfBirth) return '';
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age.toString();
+  };
+
+  const handleDateOfBirthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateOfBirth = e.target.value;
+    const calculatedAge = calculateAge(dateOfBirth);
+    setFormData({
+      ...formData, 
+      dateOfBirth,
+      age: calculatedAge
+    });
+  };
+
+  const handleHowFoundChange = (value: string) => {
+    setHowFound(value);
+    // Reset follow-up fields when changing selection
+    if (value !== 'Referred') setReferralDetails('');
+    if (value !== 'Social Media') setSocialMediaPlatform('');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Generate student ID if creating new student
+    // Don't generate student ID on frontend - let backend handle sequential numbering
     const studentData = {
       ...formData,
-      id: student?.id || `temp_${Date.now()}`, // Temporary ID for new students
-      studentId: formData.studentId || `STU${String(Date.now()).slice(-6)}`
+      id: student?.id || `temp_${Date.now()}`,
+      // Remove frontend student ID generation - backend will generate proper sequential ID
+      studentId: student?.studentId || '', // Keep existing ID for edits, empty for new students
+      // Include additional form data for Google Sheets
+      socialMediaConsent: socialMediaConsent,
+      howFound: howFound,
+      referralDetails: referralDetails,
+      socialMediaPlatform: socialMediaPlatform
     };
     
     onSave(studentData);
@@ -1086,167 +1304,314 @@ function StudentModal({ student, onClose, onSave }: StudentModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
-          {student ? 'Edit Student' : 'Add New Student'}
-        </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-                <input
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-                <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  placeholder="e.g. 18, 22, 25"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-              <textarea
-                value={formData.address}
-                onChange={(e) => setFormData({...formData, address: e.target.value})}
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                required
-              />
-            </div>
+      <div 
+        className="bg-white rounded-xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl"
+        style={{
+          boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
+        {/* Compact Header */}
+        <div 
+          className="text-white p-6 text-center relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+          }}
+        >
+          <div className="relative z-10">
+            <h1 className="text-2xl font-bold mb-2" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              🎵 Discover Music School
+            </h1>
+            <p className="text-sm opacity-90">Student Information Form</p>
           </div>
-
-          {/* Emergency Contact Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Emergency Contact Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
-                <input
-                  type="text"
-                  value={formData.parentName}
-                  onChange={(e) => setFormData({...formData, parentName: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
-                <input
-                  type="tel"
-                  value={formData.parentPhone}
-                  onChange={(e) => setFormData({...formData, parentPhone: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-            </div>
+          {/* Subtle decorative elements */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-5">
+            <div className="absolute -top-2 -left-2 w-16 h-16 rounded-full bg-white"></div>
+            <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white"></div>
           </div>
+        </div>
 
-          {/* Enrollment Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Enrollment Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Enrollment Date</label>
-                <input
-                  type="date"
-                  value={formData.enrollmentDate}
-                  onChange={(e) => setFormData({...formData, enrollmentDate: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value as 'active' | 'inactive'})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4 pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        {/* Compact Form Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(95vh-150px)]" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* Personal Information - More Compact */}
+            <div 
+              className="p-4 rounded-lg border border-blue-100"
+              style={{
+                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
+                borderLeft: '3px solid #007bff'
+              }}
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-blue-600">👤</span>
+                Personal Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Full Name and DOB */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Student's Full Name *</label>
+                  <input
+                    type="text"
+                    value={fullNameInput}
+                    onChange={(e) => {
+                      const fullName = e.target.value;
+                      setFullNameInput(fullName);
+                      
+                      // Update firstName and lastName in formData
+                      if (fullName.trim() === '') {
+                        setFormData({...formData, firstName: '', lastName: ''});
+                      } else {
+                        const trimmedName = fullName.trim();
+                        
+                        // Check if input contains comma (Last Name, First Name format)
+                        if (trimmedName.includes(',')) {
+                          const commaParts = trimmedName.split(',');
+                          const lastName = commaParts[0].trim();
+                          const firstName = commaParts[1] ? commaParts[1].trim() : '';
+                          setFormData({...formData, firstName, lastName});
+                        } else {
+                          // No comma, treat as single name or space-separated
+                          const spaceIndex = trimmedName.indexOf(' ');
+                          
+                          if (spaceIndex === -1) {
+                            // No space yet, assume it's last name being typed
+                            setFormData({...formData, firstName: '', lastName: trimmedName});
+                          } else {
+                            // Has space, assume "Last First" format
+                            const lastName = trimmedName.substring(0, spaceIndex);
+                            const firstName = trimmedName.substring(spaceIndex + 1);
+                            setFormData({...formData, firstName, lastName});
+                          }
+                        }
+                      }
+                    }}
+                    placeholder="Enter student's complete name (e.g., Doe, John or Doe John)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Format: Last Name, First Name (e.g., "Smith, John")</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth *</label>
+                  <input
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={handleDateOfBirthChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm text-gray-900"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Age (Auto-calculated)</label>
+                  <input
+                    type="text"
+                    value={formData.age}
+                    placeholder="Will be calculated from birth date"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-700 text-sm cursor-not-allowed placeholder-gray-500"
+                    readOnly
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Emergency Contact Person *</label>
+                  <input
+                    type="text"
+                    value={formData.parentName}
+                    onChange={(e) => setFormData({...formData, parentName: e.target.value})}
+                    placeholder="Parent or guardian name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="example@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Contact Number *</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    placeholder="Phone number (e.g., 09XX-XXX-XXXX)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm text-gray-900 placeholder-gray-500"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Preferences Section - Compact */}
+            <div 
+              className="p-4 rounded-lg border border-green-100"
+              style={{
+                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
+                borderLeft: '3px solid #28a745'
+              }}
             >
-              {student ? 'Update' : 'Add'} Student
-            </button>
-          </div>
-        </form>
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-green-600">⚙️</span>
+                Preferences & Permissions
+              </h3>
+              
+              {/* Social Media Consent - Compact */}
+              <div className="mb-4">
+                <label className="block text-sm font-bold text-gray-700 mb-3">Social Media Consent 📱</label>
+                <p className="text-xs text-gray-600 mb-3">Can we feature your student's progress and achievements on our social media?</p>
+                <div className="flex gap-6">
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="socialMediaConsent"
+                      value="Yes"
+                      checked={socialMediaConsent === 'Yes'}
+                      onChange={(e) => setSocialMediaConsent(e.target.value)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-1"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                      ✅ Yes, I consent
+                    </span>
+                  </label>
+                  <label className="flex items-center cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="socialMediaConsent"
+                      value="No"
+                      checked={socialMediaConsent === 'No'}
+                      onChange={(e) => setSocialMediaConsent(e.target.value)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-1"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                      ❌ No, please keep private
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* How did you find us? - Compact */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-3">How did you find us? 🔍</label>
+                <p className="text-xs text-gray-600 mb-3">Help us understand how people discover Discover Music School</p>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => handleHowFoundChange('Referred')}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all duration-200 font-medium text-sm ${
+                      howFound === 'Referred' 
+                        ? 'border-blue-500 bg-blue-100 text-blue-700 shadow-md' 
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span className="text-lg">👥</span>
+                    <span>Friend Referred</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleHowFoundChange('Social Media')}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all duration-200 font-medium text-sm ${
+                      howFound === 'Social Media' 
+                        ? 'border-blue-500 bg-blue-100 text-blue-700 shadow-md' 
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span className="text-lg">📱</span>
+                    <span>Social Media</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleHowFoundChange('Walk-in')}
+                    className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg border-2 transition-all duration-200 font-medium text-sm ${
+                      howFound === 'Walk-in' 
+                        ? 'border-blue-500 bg-blue-100 text-blue-700 shadow-md' 
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span className="text-lg">🚶</span>
+                    <span>Walked By</span>
+                  </button>
+                </div>
+
+                {/* Follow-up Questions */}
+                {howFound === 'Referred' && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <label className="block text-sm font-bold text-blue-700 mb-2">Who referred you to us? 👥</label>
+                    <input
+                      type="text"
+                      value={referralDetails}
+                      onChange={(e) => setReferralDetails(e.target.value)}
+                      placeholder="Enter the name of the person or organization who referred you"
+                      className="w-full px-3 py-2 border border-blue-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-200 focus:outline-none transition-all text-sm bg-white text-gray-900 placeholder-gray-500"
+                    />
+                  </div>
+                )}
+
+                {howFound === 'Social Media' && (
+                  <div className="mt-3 p-3 bg-pink-50 border border-pink-200 rounded-lg">
+                    <label className="block text-xs font-bold text-pink-700 mb-2">Which platform? �</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Facebook', 'Instagram', 'TikTok', 'YouTube'].map((platform) => (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => setSocialMediaPlatform(platform)}
+                          className={`px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                            socialMediaPlatform === platform
+                              ? 'bg-pink-200 text-pink-800 border border-pink-300'
+                              : 'bg-white text-gray-600 border border-gray-300 hover:bg-pink-50'
+                          }`}
+                        >
+                          {platform}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Compact Action Buttons */}
+            <div className="flex gap-4 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={operationLoading.isLoading}
+                className="flex-1 text-white py-3 px-6 rounded-lg font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                style={{
+                  background: operationLoading.isLoading 
+                    ? 'linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%)' 
+                    : 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+                }}
+              >
+                {operationLoading.isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <>🎵 SUBMIT INFORMATION</>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

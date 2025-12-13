@@ -36,12 +36,12 @@ model Teacher {
   lastName          String
   email             String   @unique
   phone             String?
-  subject           String?
-  currentLesson     Int      @default(1)
-  maxLessons        Int      @default(20)
-  cardNumber        String?
-  lessonPlan        String?
-  notes             String?
+  instrument        String?
+  address           String?
+  dateOfBirth       String?
+  age               String?
+  zipCode           String?
+  tinNumber         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

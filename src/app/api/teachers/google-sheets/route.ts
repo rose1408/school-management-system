@@ -17,8 +17,8 @@ export async function GET(request: Request) {
     let csvUrl;
     
     try {
-      // Try to get the TEACHER sheet specifically
-      csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=TEACHER`;
+      // Try to get the TEACHERS sheet specifically
+      csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=TEACHERS`;
       
       let response = await fetch(csvUrl);
       

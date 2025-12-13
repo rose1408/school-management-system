@@ -1,16 +1,40 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  orderBy,
-  serverTimestamp,
-  Timestamp 
-} from 'firebase/firestore'
-import { db as firestore } from './firebase'
+import type { Timestamp } from 'firebase/firestore';
+
+// Dynamic imports to avoid build-time Firebase issues
+let firestore: any = null;
+let collection: any = null;
+let doc: any = null;
+let getDocs: any = null;
+let addDoc: any = null;
+let updateDoc: any = null;
+let deleteDoc: any = null;
+let query: any = null;
+let orderBy: any = null;
+let serverTimestamp: any = null;
+
+// Initialize Firebase only when needed
+const initFirebaseIfNeeded = async () => {
+  if (!firestore) {
+    try {
+      const { db: firebaseDb } = await import('./firebase');
+      const firestoreModule = await import('firebase/firestore');
+      
+      firestore = firebaseDb;
+      collection = firestoreModule.collection;
+      doc = firestoreModule.doc;
+      getDocs = firestoreModule.getDocs;
+      addDoc = firestoreModule.addDoc;
+      updateDoc = firestoreModule.updateDoc;
+      deleteDoc = firestoreModule.deleteDoc;
+      query = firestoreModule.query;
+      orderBy = firestoreModule.orderBy;
+      serverTimestamp = firestoreModule.serverTimestamp;
+    } catch (error) {
+      console.error('Failed to initialize Firebase:', error);
+      throw error;
+    }
+  }
+};
 
 export interface Student {
   id: string
@@ -26,6 +50,9 @@ export interface Student {
   enrollmentDate: string
   studentId?: string
   status: string
+  socialMediaConsent?: string
+  howFound?: string
+  referralDetails?: string
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
@@ -38,6 +65,10 @@ export interface Teacher {
   phone: string
   instrument: string
   address: string
+  dateOfBirth?: string
+  age?: string
+  zipCode?: string
+  tinNumber?: string
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
@@ -50,6 +81,8 @@ export const db = {
   student: {
     findMany: async (): Promise<Student[]> => {
       try {
+        await initFirebaseIfNeeded();
+        
         const q = query(
           collection(firestore, STUDENTS_COLLECTION),
           orderBy('createdAt', 'desc')
@@ -57,10 +90,10 @@ export const db = {
         const querySnapshot = await getDocs(q)
         
         const students: Student[] = []
-        querySnapshot.forEach((doc) => {
-          const data = doc.data()
+        querySnapshot.forEach((docSnap: any) => {
+          const data = docSnap.data()
           students.push({
-            id: doc.id,
+            id: docSnap.id,
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
@@ -87,6 +120,8 @@ export const db = {
     
     create: async (data: { data: Omit<Student, 'id' | 'createdAt' | 'updatedAt'> }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = await addDoc(collection(firestore, STUDENTS_COLLECTION), {
           ...data.data,
           createdAt: serverTimestamp(),
@@ -111,6 +146,8 @@ export const db = {
       data: Partial<Omit<Student, 'id' | 'createdAt' | 'updatedAt'>> 
     }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = doc(firestore, STUDENTS_COLLECTION, where.id)
         await updateDoc(docRef, {
           ...data,
@@ -133,6 +170,8 @@ export const db = {
     
     delete: async ({ where }: { where: { id: string } }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = doc(firestore, STUDENTS_COLLECTION, where.id)
         await deleteDoc(docRef)
         
@@ -150,6 +189,8 @@ export const db = {
   teacher: {
     findMany: async (): Promise<Teacher[]> => {
       try {
+        await initFirebaseIfNeeded();
+        
         const q = query(
           collection(firestore, TEACHERS_COLLECTION),
           orderBy('createdAt', 'desc')
@@ -157,16 +198,20 @@ export const db = {
         const querySnapshot = await getDocs(q)
         
         const teachers: Teacher[] = []
-        querySnapshot.forEach((doc) => {
-          const data = doc.data()
+        querySnapshot.forEach((docSnap: any) => {
+          const data = docSnap.data()
           teachers.push({
-            id: doc.id,
+            id: docSnap.id,
             firstName: data.firstName,
             lastName: data.lastName,
             email: data.email,
             phone: data.phone,
             instrument: data.instrument,
             address: data.address,
+            dateOfBirth: data.dateOfBirth,
+            age: data.age,
+            zipCode: data.zipCode,
+            tinNumber: data.tinNumber,
             createdAt: data.createdAt,
             updatedAt: data.updatedAt
           })
@@ -181,6 +226,8 @@ export const db = {
     
     create: async (data: { data: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'> }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = await addDoc(collection(firestore, TEACHERS_COLLECTION), {
           ...data.data,
           createdAt: serverTimestamp(),
@@ -205,6 +252,8 @@ export const db = {
       data: Partial<Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>> 
     }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = doc(firestore, TEACHERS_COLLECTION, where.id)
         await updateDoc(docRef, {
           ...data,
@@ -227,6 +276,8 @@ export const db = {
     
     delete: async ({ where }: { where: { id: string } }) => {
       try {
+        await initFirebaseIfNeeded();
+        
         const docRef = doc(firestore, TEACHERS_COLLECTION, where.id)
         await deleteDoc(docRef)
         

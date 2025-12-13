@@ -1,8 +1,22 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
+// Dynamic Firebase imports
+let firestore: any = null;
+let collection: any = null;
+let getDocs: any = null;
+
+async function initFirebaseIfNeeded() {
+  if (!firestore) {
+    const { db } = await import('@/lib/firebase');
+    const firestoreModule = await import('firebase/firestore');
+    
+    firestore = db;
+    collection = firestoreModule.collection;
+    getDocs = firestoreModule.getDocs;
+  }
+}
 
 export default function DebugSchedulesPage() {
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -18,16 +32,18 @@ export default function DebugSchedulesPage() {
     try {
       console.log('🔍 Loading all data...');
       
+      await initFirebaseIfNeeded();
+      
       // Load schedules
-      const schedulesSnapshot = await getDocs(collection(db, 'schedules'));
-      const schedulesData = schedulesSnapshot.docs.map(doc => ({
+      const schedulesSnapshot = await getDocs(collection(firestore, 'schedules'));
+      const schedulesData = schedulesSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       }));
       
       // Load teachers
-      const teachersSnapshot = await getDocs(collection(db, 'teachers'));
-      const teachersData = teachersSnapshot.docs.map(doc => ({
+      const teachersSnapshot = await getDocs(collection(firestore, 'teachers'));
+      const teachersData = teachersSnapshot.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data()
       }));
