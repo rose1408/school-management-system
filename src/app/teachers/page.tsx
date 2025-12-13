@@ -755,7 +755,16 @@ interface ScheduleModalProps {
 }
 
 function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: ScheduleModalProps) {
-  const [formData, setFormData] = useState<Omit<TeacherSchedule, 'id'>>({
+  console.log('ScheduleModal rendered with schedule:', schedule ? {
+    id: schedule.id,
+    studentName: schedule.studentName,
+    currentLessonNumber: schedule.currentLessonNumber,
+    day: schedule.day,
+    time: schedule.time
+  } : null);
+
+  // Initialize form data - always derive from props for editing
+  const initialFormData = {
     teacherId: schedule?.teacherId || (teachers[0]?.id || ''),
     studentName: schedule?.studentName || '',
     instrument: schedule?.instrument || '',
@@ -766,22 +775,26 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
     duration: schedule?.duration || '60 min',
     cardNumber: schedule?.cardNumber || '',
     currentLessonNumber: schedule?.currentLessonNumber || 1,
-    maxLessons: 10, // Always 10 sessions
+    maxLessons: schedule?.maxLessons || 10,
     startDate: schedule?.startDate || new Date().toISOString().split('T')[0],
     isActive: schedule?.isActive ?? true
-  });
+  };
+
+  const [formData, setFormData] = useState<Omit<TeacherSchedule, 'id'>>(initialFormData);
 
   // New state for recurring schedule functionality
   const [recurringWeeks, setRecurringWeeks] = useState(3);
   const [previewSchedules, setPreviewSchedules] = useState<any[]>([]);
-  const [scheduleSlots, setScheduleSlots] = useState(() => [
-    { 
-      day: schedule?.day || 'Monday', 
-      time: schedule?.time || '09:00', 
-      date: schedule?.startDate || new Date().toISOString().split('T')[0], 
-      lessonNumber: schedule?.currentLessonNumber || 1 
-    }
-  ]);
+  
+  // Initialize schedule slots - always derive from props for editing
+  const initialScheduleSlots = [{
+    day: schedule?.day || 'Monday',
+    time: schedule?.time || '09:00',
+    date: schedule?.startDate || new Date().toISOString().split('T')[0],
+    lessonNumber: schedule?.currentLessonNumber || 1
+  }];
+
+  const [scheduleSlots, setScheduleSlots] = useState(initialScheduleSlots);
 
   // Student suggestions state
   const [studentSuggestions, setStudentSuggestions] = useState<Student[]>([]);
@@ -794,37 +807,43 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
   // SAFE MODIFICATION ZONE - Schedule Editing Fix
   // Initialize schedule slots properly when editing
   // ========================================
+  // Update form and slots whenever schedule prop changes
   useEffect(() => {
-    if (schedule) {
-      console.log('ScheduleModal: Editing schedule with lesson number:', schedule.currentLessonNumber);
-      // When editing, update both form data and schedule slots with correct lesson number
-      setFormData(prev => ({
-        ...prev,
-        teacherId: schedule.teacherId,
-        studentName: schedule.studentName,
-        instrument: schedule.instrument,
-        level: schedule.level,
-        room: schedule.room,
-        time: schedule.time,
-        day: schedule.day,
-        duration: schedule.duration,
-        cardNumber: schedule.cardNumber,
-        currentLessonNumber: schedule.currentLessonNumber,
-        maxLessons: schedule.maxLessons || 10,
-        startDate: schedule.startDate,
-        isActive: schedule.isActive ?? true
-      }));
-      
-      setScheduleSlots([{
-        day: schedule.day,
-        time: schedule.time,
-        date: schedule.startDate,
-        lessonNumber: schedule.currentLessonNumber
-      }]);
-    } else {
-      console.log('ScheduleModal: Creating new schedule');
-    }
-  }, [schedule]);
+    console.log('ScheduleModal useEffect triggered. Schedule:', schedule ? {
+      id: schedule.id,
+      currentLessonNumber: schedule.currentLessonNumber,
+      studentName: schedule.studentName
+    } : null);
+
+    const newFormData = {
+      teacherId: schedule?.teacherId || (teachers[0]?.id || ''),
+      studentName: schedule?.studentName || '',
+      instrument: schedule?.instrument || '',
+      level: schedule?.level || 'Preparatory',
+      room: schedule?.room || '',
+      time: schedule?.time || '09:00',
+      day: schedule?.day || 'Monday',
+      duration: schedule?.duration || '60 min',
+      cardNumber: schedule?.cardNumber || '',
+      currentLessonNumber: schedule?.currentLessonNumber || 1,
+      maxLessons: schedule?.maxLessons || 10,
+      startDate: schedule?.startDate || new Date().toISOString().split('T')[0],
+      isActive: schedule?.isActive ?? true
+    };
+
+    const newScheduleSlots = [{
+      day: schedule?.day || 'Monday',
+      time: schedule?.time || '09:00',
+      date: schedule?.startDate || new Date().toISOString().split('T')[0],
+      lessonNumber: schedule?.currentLessonNumber || 1
+    }];
+
+    console.log('Setting form data with lesson number:', newFormData.currentLessonNumber);
+    console.log('Setting schedule slots with lesson number:', newScheduleSlots[0].lessonNumber);
+
+    setFormData(newFormData);
+    setScheduleSlots(newScheduleSlots);
+  }, [schedule, teachers]);
 
   const levels = ["Preparatory", "Primary", "Intermediate", "Advance"];
   const durations = ["30 min", "45 min", "60 min", "90 min", "120 min"];
@@ -1751,6 +1770,13 @@ export default function TeachersPage() {
   };
 
   const handleEditSchedule = (schedule: TeacherSchedule) => {
+    console.log('handleEditSchedule called with schedule:', {
+      id: schedule.id,
+      studentName: schedule.studentName,
+      currentLessonNumber: schedule.currentLessonNumber,
+      day: schedule.day,
+      time: schedule.time
+    });
     setEditingSchedule(schedule);
     setIsScheduleModalOpen(true);
   };
