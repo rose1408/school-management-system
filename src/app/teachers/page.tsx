@@ -755,13 +755,6 @@ interface ScheduleModalProps {
 }
 
 function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: ScheduleModalProps) {
-  console.log('ScheduleModal rendered with schedule:', schedule ? {
-    id: schedule.id,
-    studentName: schedule.studentName,
-    currentLessonNumber: schedule.currentLessonNumber,
-    day: schedule.day,
-    time: schedule.time
-  } : null);
 
   // Initialize form data - always derive from props for editing
   const initialFormData = {
@@ -809,12 +802,6 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
   // ========================================
   // Update form and slots whenever schedule prop changes
   useEffect(() => {
-    console.log('ScheduleModal useEffect triggered. Schedule:', schedule ? {
-      id: schedule.id,
-      currentLessonNumber: schedule.currentLessonNumber,
-      studentName: schedule.studentName
-    } : null);
-
     const newFormData = {
       teacherId: schedule?.teacherId || (teachers[0]?.id || ''),
       studentName: schedule?.studentName || '',
@@ -837,9 +824,6 @@ function ScheduleModal({ schedule, teachers, students, days, onClose, onSave }: 
       date: schedule?.startDate || new Date().toISOString().split('T')[0],
       lessonNumber: schedule?.currentLessonNumber || 1
     }];
-
-    console.log('Setting form data with lesson number:', newFormData.currentLessonNumber);
-    console.log('Setting schedule slots with lesson number:', newScheduleSlots[0].lessonNumber);
 
     setFormData(newFormData);
     setScheduleSlots(newScheduleSlots);
@@ -1404,7 +1388,7 @@ export default function TeachersPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Temporarily reduced for testing pagination
+  const itemsPerPage = 12;
   
   const [modalState, setModalState] = useState<ModalState>({
     show: false,
@@ -1715,20 +1699,8 @@ export default function TeachersPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedSchedules = schedules.slice(startIndex, endIndex);
 
-  // Debug pagination
-  console.log('Pagination Debug:', {
-    totalSchedules: schedules.length,
-    itemsPerPage,
-    currentPage,
-    totalPages,
-    startIndex,
-    endIndex,
-    paginatedCount: paginatedSchedules.length
-  });
-
   // Page change handlers
   const goToPage = (page: number) => {
-    console.log(`Navigating to page ${page}. Current: ${currentPage}, Total: ${totalPages}`);
     setCurrentPage(page);
     // Scroll to schedules section
     const schedulesSection = document.getElementById('schedules-overview');
@@ -1738,14 +1710,12 @@ export default function TeachersPage() {
   };
 
   const goToNextPage = () => {
-    console.log(`Next page clicked. Current: ${currentPage}, Total: ${totalPages}`);
     if (currentPage < totalPages) {
       goToPage(currentPage + 1);
     }
   };
 
   const goToPrevPage = () => {
-    console.log(`Prev page clicked. Current: ${currentPage}, Total: ${totalPages}`);
     if (currentPage > 1) {
       goToPage(currentPage - 1);
     }
@@ -1770,13 +1740,6 @@ export default function TeachersPage() {
   };
 
   const handleEditSchedule = (schedule: TeacherSchedule) => {
-    console.log('handleEditSchedule called with schedule:', {
-      id: schedule.id,
-      studentName: schedule.studentName,
-      currentLessonNumber: schedule.currentLessonNumber,
-      day: schedule.day,
-      time: schedule.time
-    });
     setEditingSchedule(schedule);
     setIsScheduleModalOpen(true);
   };
