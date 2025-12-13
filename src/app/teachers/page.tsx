@@ -2128,6 +2128,13 @@ export default function TeachersPage() {
           </div>
           
           <div className="p-8">
+            {/* DEBUG: Deployment verification */}
+            <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-3 mb-4 text-sm">
+              <strong>🔍 Debug Info:</strong> Total: {schedules.length}, Page: {currentPage}/{totalPages}, 
+              Showing: {paginatedSchedules.length} items, ItemsPerPage: {itemsPerPage}
+              <br />Build: Dec 13, 2025 - {new Date().toLocaleTimeString()}
+            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mb-8">
               {paginatedSchedules.map(schedule => {
                 const teacher = realtimeTeachers.find(t => t.id === schedule.teacherId);
