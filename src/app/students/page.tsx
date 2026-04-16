@@ -1019,9 +1019,7 @@ export default function StudentsPage() {
               
               console.error('Error saving student:', error);
               showModal('error', 'Save Failed', 'An error occurred while saving the student. Please try again.');
-            } finally {
-              // Always reset submitting state
-              setIsSubmitting(false);
+              throw error; // Re-throw so the modal can catch it
             }
           }}
         />
@@ -1277,7 +1275,7 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
     if (value !== 'Social Media') setSocialMediaPlatform('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Prevent double submission
@@ -1302,9 +1300,11 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
         socialMediaPlatform: socialMediaPlatform
       };
 
-      onSave(studentData);
+      await onSave(studentData);
     } catch (error) {
       console.error('Error in form submission:', error);
+    } finally {
+      // Always reset submitting state after operation completes
       setIsSubmitting(false);
     }
   };
