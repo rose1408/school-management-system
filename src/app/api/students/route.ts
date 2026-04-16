@@ -112,80 +112,106 @@ export async function POST(request: Request) {
     
     // Also add to Google Sheets if sheet ID is provided
     if (data.googleSheetId) {
-      try {
-        // Call Google Apps Script directly instead of internal API
-        const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
-        
-        // Format timestamp to remove comma: "27/09/2025 18:44:38"
-        const now = new Date();
-        const day = now.getDate().toString().padStart(2, '0');
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const year = now.getFullYear();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        
-        const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-        
-        // Prepare follow-up answer for Column L (Referral Details)
-        let referralDetails = '';
-        
-        if (data.howFound === 'Social Media') {
-          if (data.socialMediaPlatform) {
-            referralDetails = data.socialMediaPlatform;
-          } else if (data.referralDetails) {
-            referralDetails = data.referralDetails;
+      // Send Google Sheets update in background without blocking the response
+      (async () => {
+        try {
+          // Call Google Apps Script directly instead of internal API
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+          
+          // Format timestamp to remove comma: "27/09/2025 18:44:38"
+          const now = new Date();
+          const day = now.getDate().toString().padStart(2, '0');
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const year = now.getFullYear();
+          const hours = now.getHours().toString().padStart(2, '0');
+          const minutes = now.getMinutes().toString().padStart(2, '0');
+          const seconds = now.getSeconds().toString().padStart(2, '0');
+          
+          const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+          
+          // Prepare follow-up answer for Column L (Referral Details)
+          let referralDetails = '';
+          
+          if (data.howFound === 'Social Media') {
+            if (data.socialMediaPlatform) {
+              referralDetails = data.socialMediaPlatform;
+            } else if (data.referralDetails) {
+              referralDetails = data.referralDetails;
+            } else {
+              referralDetails = 'Social Media';
+            }
+          } else if (data.howFound === 'Referred' || data.howFound === 'Friend Referred') {
+            referralDetails = data.referralDetails || 'Referred';
+          } else if (data.howFound === 'Walk-in' || data.howFound === 'Walked By') {
+            referralDetails = 'Walk-in';
           } else {
-            referralDetails = 'Social Media';
+            referralDetails = data.referralDetails || '';
           }
-        } else if (data.howFound === 'Referred' || data.howFound === 'Friend Referred') {
-          referralDetails = data.referralDetails || 'Referred';
-        } else if (data.howFound === 'Walk-in' || data.howFound === 'Walked By') {
-          referralDetails = 'Walk-in';
-        } else {
-          referralDetails = data.referralDetails || '';
+          
+          const sheetData = {
+            timestamp: formattedTimestamp,
+            studentId: formattedStudentId,
+            fullName: `${updatedStudent.lastName || ''}, ${updatedStudent.firstName || ''}`.replace(', ,', '').trim(),
+            dateOfBirth: updatedStudent.dateOfBirth || '',
+            age: updatedStudent.age || '',
+            emergencyContact: updatedStudent.parentName || '',
+            email: updatedStudent.email || '',
+            contactNumber: updatedStudent.phone || '',
+            socialMediaConsent: data.socialMediaConsent || '',
+            status: updatedStudent.status || 'ACTIVE',
+            referralSource: data.howFound || '',
+            referralDetails: referralDetails
+          };
+          
+          console.log('Sending student data to Google Sheets:', sheetData);
+          
+          // Retry logic for Google Sheets webhook
+          let retries = 3;
+          let lastError = null;
+          
+          while (retries > 0) {
+            try {
+              const sheetResponse = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  action: 'addStudent',
+                  sheetId: data.googleSheetId,
+                  data: sheetData
+                }),
+                signal: AbortSignal.timeout(30000) // 30 second timeout
+              });
+              
+              if (sheetResponse.ok) {
+                const sheetResult = await sheetResponse.json();
+                console.log('Successfully added student to Google Sheets:', updatedStudent.firstName, updatedStudent.lastName);
+                console.log('Google Sheets response:', sheetResult);
+                return;
+              } else {
+                lastError = `HTTP ${sheetResponse.status}: ${await sheetResponse.text()}`;
+                console.warn(`Attempt ${4 - retries} failed:`, lastError);
+                retries--;
+                if (retries > 0) {
+                  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                }
+              }
+            } catch (fetchError) {
+              lastError = fetchError;
+              console.warn(`Attempt ${4 - retries} failed with error:`, fetchError);
+              retries--;
+              if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              }
+            }
+          }
+          
+          console.error('Failed to add student to Google Sheets after 3 retries. Last error:', lastError);
+        } catch (sheetError) {
+          console.error('Error adding to Google Sheets (but student created locally):', sheetError);
         }
-        
-        const sheetData = {
-          timestamp: formattedTimestamp,
-          studentId: formattedStudentId,
-          fullName: `${updatedStudent.lastName || ''}, ${updatedStudent.firstName || ''}`.replace(', ,', '').trim(),
-          dateOfBirth: updatedStudent.dateOfBirth || '',
-          age: updatedStudent.age || '',
-          emergencyContact: updatedStudent.parentName || '',
-          email: updatedStudent.email || '',
-          contactNumber: updatedStudent.phone || '',
-          socialMediaConsent: data.socialMediaConsent || '',
-          status: updatedStudent.status || 'ACTIVE',
-          referralSource: data.howFound || '',
-          referralDetails: referralDetails
-        };
-        
-        console.log('Sending student data to Google Sheets:', sheetData);
-        
-        const sheetResponse = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'addStudent',
-            sheetId: data.googleSheetId,
-            data: sheetData
-          })
-        });
-        
-        if (sheetResponse.ok) {
-          const sheetResult = await sheetResponse.json();
-          console.log('Successfully added student to Google Sheets:', updatedStudent.firstName, updatedStudent.lastName);
-          console.log('Google Sheets response:', sheetResult);
-        } else {
-          console.error('Error calling Google Sheets API:', await sheetResponse.text());
-        }
-      } catch (sheetError) {
-        console.error('Error adding to Google Sheets (but student created locally):', sheetError);
-        // Don't fail the entire request if Google Sheets fails
-      }
+      })();
     }
     
     // Return the updated student with the sequential Student ID
@@ -231,73 +257,99 @@ export async function PUT(request: Request) {
     // Also sync to Google Sheets if sheet ID is provided
     const googleSheetId = data.googleSheetId || '18N0O0vHScnDbuqpX4yYbUznttsf4wcjyYgdBjHWhQg4';
     if (googleSheetId) {
-      try {
-        // Call Google Apps Script for student update
-        const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
-        
-        // Format timestamp
-        const now = new Date();
-        const day = now.getDate().toString().padStart(2, '0');
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const year = now.getFullYear();
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        
-        const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-        
-        // Prepare follow-up answer for Column L (using existing data or defaults)
-        let referralDetails = '';
-        if (data.howFound === 'Social Media') {
-          referralDetails = data.socialMediaPlatform || data.referralDetails || 'Social Media';
-        } else if (data.howFound === 'Referred' || data.howFound === 'Friend Referred') {
-          referralDetails = data.referralDetails || 'Referred';
-        } else if (data.howFound === 'Walk-in' || data.howFound === 'Walked By') {
-          referralDetails = 'Walk-in';
-        } else {
-          referralDetails = data.referralDetails || '';
+      // Send Google Sheets update in background without blocking the response
+      (async () => {
+        try {
+          // Call Google Apps Script for student update
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+          
+          // Format timestamp
+          const now = new Date();
+          const day = now.getDate().toString().padStart(2, '0');
+          const month = (now.getMonth() + 1).toString().padStart(2, '0');
+          const year = now.getFullYear();
+          const hours = now.getHours().toString().padStart(2, '0');
+          const minutes = now.getMinutes().toString().padStart(2, '0');
+          const seconds = now.getSeconds().toString().padStart(2, '0');
+          
+          const formattedTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+          
+          // Prepare follow-up answer for Column L (using existing data or defaults)
+          let referralDetails = '';
+          if (data.howFound === 'Social Media') {
+            referralDetails = data.socialMediaPlatform || data.referralDetails || 'Social Media';
+          } else if (data.howFound === 'Referred' || data.howFound === 'Friend Referred') {
+            referralDetails = data.referralDetails || 'Referred';
+          } else if (data.howFound === 'Walk-in' || data.howFound === 'Walked By') {
+            referralDetails = 'Walk-in';
+          } else {
+            referralDetails = data.referralDetails || '';
+          }
+          
+          const sheetData = {
+            timestamp: formattedTimestamp,
+            studentId: student.studentId || '',
+            fullName: `${student.lastName || ''}, ${student.firstName || ''}`.replace(', ,', '').trim(),
+            dateOfBirth: student.dateOfBirth || '',
+            age: student.age || '',
+            emergencyContact: student.parentName || '',
+            email: student.email || '',
+            contactNumber: student.phone || '',
+            socialMediaConsent: data.socialMediaConsent || '',
+            status: student.status || 'ACTIVE',
+            referralSource: data.howFound || '',
+            referralDetails: referralDetails
+          };
+          
+          console.log('Syncing updated student to Google Sheets:', sheetData);
+          
+          // Retry logic for Google Sheets webhook
+          let retries = 3;
+          let lastError = null;
+          
+          while (retries > 0) {
+            try {
+              const sheetResponse = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  action: 'updateStudent',
+                  sheetId: googleSheetId,
+                  data: sheetData
+                }),
+                signal: AbortSignal.timeout(30000) // 30 second timeout
+              });
+              
+              if (sheetResponse.ok) {
+                const sheetResult = await sheetResponse.json();
+                console.log('Successfully updated student in Google Sheets:', student.firstName, student.lastName);
+                console.log('Google Sheets response:', sheetResult);
+                return;
+              } else {
+                lastError = `HTTP ${sheetResponse.status}: ${await sheetResponse.text()}`;
+                console.warn(`Attempt ${4 - retries} failed:`, lastError);
+                retries--;
+                if (retries > 0) {
+                  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                }
+              }
+            } catch (fetchError) {
+              lastError = fetchError;
+              console.warn(`Attempt ${4 - retries} failed with error:`, fetchError);
+              retries--;
+              if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              }
+            }
+          }
+          
+          console.error('Failed to update student in Google Sheets after 3 retries. Last error:', lastError);
+        } catch (sheetError) {
+          console.error('Error updating in Google Sheets (but student updated locally):', sheetError);
         }
-        
-        const sheetData = {
-          timestamp: formattedTimestamp,
-          studentId: student.studentId || '',
-          fullName: `${student.lastName || ''}, ${student.firstName || ''}`.replace(', ,', '').trim(),
-          dateOfBirth: student.dateOfBirth || '',
-          age: student.age || '',
-          emergencyContact: student.parentName || '',
-          email: student.email || '',
-          contactNumber: student.phone || '',
-          socialMediaConsent: data.socialMediaConsent || '',
-          status: student.status || 'ACTIVE',
-          referralSource: data.howFound || '',
-          referralDetails: referralDetails
-        };
-        
-        console.log('Syncing updated student to Google Sheets:', sheetData);
-        
-        const sheetResponse = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'updateStudent',
-            sheetId: googleSheetId,
-            data: sheetData
-          })
-        });
-        
-        if (sheetResponse.ok) {
-          const sheetResult = await sheetResponse.json();
-          console.log('Successfully updated student in Google Sheets:', student.firstName, student.lastName);
-          console.log('Google Sheets response:', sheetResult);
-        } else {
-          console.error('Error calling Google Sheets API for update:', await sheetResponse.text());
-        }
-      } catch (sheetError) {
-        console.error('Error updating in Google Sheets (but student updated locally):', sheetError);
-        // Don't fail the entire request if Google Sheets fails
-      }
+      })();
     }
     
     return NextResponse.json({ student });
