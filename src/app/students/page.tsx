@@ -1229,6 +1229,7 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
   const [socialMediaConsent, setSocialMediaConsent] = useState('Yes');
   const [howFound, setHowFound] = useState('');
   const [referralDetails, setReferralDetails] = useState('');
+  const [socialMediaPlatform, setSocialMediaPlatform] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Separate state for full name input to prevent cursor jumping
