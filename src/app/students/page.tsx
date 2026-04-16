@@ -1019,6 +1019,9 @@ export default function StudentsPage() {
               
               console.error('Error saving student:', error);
               showModal('error', 'Save Failed', 'An error occurred while saving the student. Please try again.');
+            } finally {
+              // Always reset submitting state
+              setIsSubmitting(false);
             }
           }}
         />
@@ -1226,7 +1229,7 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
   const [socialMediaConsent, setSocialMediaConsent] = useState('Yes');
   const [howFound, setHowFound] = useState('');
   const [referralDetails, setReferralDetails] = useState('');
-  const [socialMediaPlatform, setSocialMediaPlatform] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Separate state for full name input to prevent cursor jumping
   const [fullNameInput, setFullNameInput] = useState(() => {
@@ -1238,19 +1241,9 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
     return '';
   });
 
-  // Sync fullNameInput when student prop changes (for editing)
+  // Reset submitting state when student changes (for editing different students)
   useEffect(() => {
-    if (student) {
-      if (student.lastName && student.firstName) {
-        setFullNameInput(`${student.lastName}, ${student.firstName}`);
-      } else if (student.firstName || student.lastName) {
-        setFullNameInput(`${student.lastName || ''} ${student.firstName || ''}`.trim());
-      } else {
-        setFullNameInput('');
-      }
-    } else {
-      setFullNameInput('');
-    }
+    setIsSubmitting(false);
   }, [student]);
 
   // Calculate age when date of birth changes
@@ -1285,21 +1278,34 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Don't generate student ID on frontend - let backend handle sequential numbering
-    const studentData = {
-      ...formData,
-      id: student?.id || `temp_${Date.now()}`,
-      // Remove frontend student ID generation - backend will generate proper sequential ID
-      studentId: student?.studentId || '', // Keep existing ID for edits, empty for new students
-      // Include additional form data for Google Sheets
-      socialMediaConsent: socialMediaConsent,
-      howFound: howFound,
-      referralDetails: referralDetails,
-      socialMediaPlatform: socialMediaPlatform
-    };
-    
-    onSave(studentData);
+
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log('Form already submitting, ignoring duplicate submission');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Don't generate student ID on frontend - let backend handle sequential numbering
+      const studentData = {
+        ...formData,
+        id: student?.id || `temp_${Date.now()}`,
+        // Remove frontend student ID generation - backend will generate proper sequential ID
+        studentId: student?.studentId || '', // Keep existing ID for edits, empty for new students
+        // Include additional form data for Google Sheets
+        socialMediaConsent: socialMediaConsent,
+        howFound: howFound,
+        referralDetails: referralDetails,
+        socialMediaPlatform: socialMediaPlatform
+      };
+
+      onSave(studentData);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1592,15 +1598,15 @@ function StudentModal({ student, onClose, onSave, operationLoading }: StudentMod
               </button>
               <button
                 type="submit"
-                disabled={operationLoading.isLoading}
+                disabled={operationLoading.isLoading || isSubmitting}
                 className="flex-1 text-white py-3 px-6 rounded-lg font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                 style={{
-                  background: operationLoading.isLoading 
+                  background: (operationLoading.isLoading || isSubmitting)
                     ? 'linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%)' 
                     : 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
                 }}
               >
-                {operationLoading.isLoading ? (
+                {(operationLoading.isLoading || isSubmitting) ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     <span>Submitting...</span>

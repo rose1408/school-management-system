@@ -211,7 +211,7 @@ export async function POST(request: Request) {
         } catch (sheetError) {
           console.error('Error adding to Google Sheets (but student created locally):', sheetError);
         }
-      })();
+      });
     }
     
     // Return the updated student with the sequential Student ID
