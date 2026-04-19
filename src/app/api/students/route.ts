@@ -454,13 +454,27 @@ export async function PUT(request: Request) {
 // Test Google Sheets connection
 export async function PATCH(request: Request) {
   try {
-    const { sheetId } = await request.json();
+    console.log('📋 PATCH request received');
+    
+    let sheetId;
+    try {
+      const body = await request.json();
+      sheetId = body.sheetId;
+      console.log('📋 Sheet ID from body:', sheetId);
+    } catch (parseError) {
+      console.error('❌ Failed to parse request body:', parseError);
+      return NextResponse.json({ 
+        error: 'Invalid request body - must be valid JSON',
+        details: parseError instanceof Error ? parseError.message : 'Unknown parse error'
+      }, { status: 400 });
+    }
 
     if (!sheetId) {
+      console.warn('⚠️ Sheet ID is missing from request');
       return NextResponse.json({ error: 'Sheet ID is required' }, { status: 400 });
     }
 
-    console.log('Testing Google Sheets connection for sheet ID:', sheetId);
+    console.log('🔍 Testing Google Sheets connection for sheet ID:', sheetId);
 
     // Test the webhook with a simple ping
     const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
@@ -478,7 +492,7 @@ export async function PATCH(request: Request) {
 
     if (testResponse.ok) {
       const result = await testResponse.json();
-      console.log('Google Sheets ping successful:', result);
+      console.log('✅ Google Sheets ping successful:', result);
       return NextResponse.json({
         success: true,
         message: 'Google Sheets connection successful',
@@ -486,17 +500,23 @@ export async function PATCH(request: Request) {
       });
     } else {
       const errorText = await testResponse.text();
-      console.error('Google Sheets ping failed:', errorText);
+      console.error('❌ Google Sheets ping failed:', errorText);
       return NextResponse.json({
         success: false,
         error: `HTTP ${testResponse.status}: ${errorText}`
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('Error testing Google Sheets connection:', error);
+    console.error('❌ Error in PATCH handler:', error);
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: 'Check server logs for more information'
     }, { status: 500 });
   }
 }
