@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       (async () => {
         try {
           // Call Google Apps Script directly instead of internal API
-          const webhookUrl = `https://script.google.com/macros/s/AKfycbwMLpT565AVyDpMQZ0QF5NbfxIkS5uY0fEr6DqYmBTG4uKH3PkO82Pap2vVUH9uNPB9/exec`;
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
           
           // Format timestamp to remove comma: "27/09/2025 18:44:38"
           const now = new Date();
