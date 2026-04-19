@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const diagnostics = {
     timestamp: new Date().toISOString(),
     sheetId: sheetId,
-    webhookUrl: 'https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec',
+    webhookUrl: 'https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec',
     tests: [] as any[]
   };
 
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     };
 
     const webhookResponse = await fetch(
-      'https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec',
+      'https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec',
       {
         method: 'POST',
         headers: {

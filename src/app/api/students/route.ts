@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       (async () => {
         try {
           // Call Google Apps Script directly instead of internal API
-          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
           
           // Format timestamp to remove comma: "27/09/2025 18:44:38"
           const now = new Date();
@@ -293,7 +293,7 @@ export async function PUT(request: Request) {
       (async () => {
         try {
           // Call Google Apps Script for student update
-          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
           
           // Format timestamp
           const now = new Date();
@@ -438,7 +438,7 @@ export async function PATCH(request: Request) {
     console.log('Testing Google Sheets connection for sheet ID:', sheetId);
 
     // Test the webhook with a simple ping
-    const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+    const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
 
     const testResponse = await fetch(webhookUrl, {
       method: 'POST',

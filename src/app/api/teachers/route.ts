@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         console.log('Syncing new teacher to Google Sheets TEACHERS tab:', teacherDataForSheets);
         
         // Google Apps Script Web App URL for Google Sheets integration
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec';
         
         console.log('Attempting to sync teacher data to Google Sheets TEACHERS tab');
         console.log('Sheet ID:', googleSheetId);
@@ -175,7 +175,7 @@ export async function PUT(request: Request) {
         console.log('Syncing updated teacher to Google Sheets TEACHERS tab:', teacherDataForSheets);
         
         // Google Apps Script Web App URL for Google Sheets integration
-        const webhookUrl = 'https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec';
+        const webhookUrl = 'https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec';
         
         console.log('Attempting to update teacher data in Google Sheets TEACHERS tab');
         console.log('Sheet ID:', googleSheetId);

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     // The most reliable way is to use Google Apps Script on the sheet side
     
     // Method 1: Using Google Apps Script webhook (now configured!)
-    const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+    const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
     
     // Prepare data according to your ENROLLMENT column mapping:
     // Timestamp | Student ID | Student's Full Name | Date of Birth | Age | Person to notify in Case of Emergency | Email Address | Contact Number | Social Media Consent | Status | Referral Source | Referral Details
