@@ -165,7 +165,13 @@ export async function POST(request: Request) {
           
           console.log('📤 Sending student data to Google Sheets:', sheetData);
           console.log('🔗 Webhook URL:', webhookUrl);
-          console.log('📋 Sheet ID:', data.googleSheetId);
+          console.log('📋 Sheet ID received:', data.googleSheetId);
+          console.log('📋 Sheet ID used:', data.googleSheetId || 'FALLBACK-HARDCODED');
+          console.log('📦 Full payload being sent:', JSON.stringify({
+            action: 'addStudent',
+            sheetId: data.googleSheetId,
+            data: sheetData
+          }, null, 2));
           
           // Retry logic for Google Sheets webhook
           let retries = 3;
@@ -174,6 +180,8 @@ export async function POST(request: Request) {
           while (retries > 0) {
             try {
               console.log(`\n📨 Attempt ${4 - retries}/3 - Calling Google Sheets webhook...`);
+              console.log('🔗 Webhook URL:', webhookUrl);
+              console.log('📨 Request timeout: 30 seconds');
               
               const sheetResponse = await fetch(webhookUrl, {
                 method: 'POST',
@@ -189,8 +197,12 @@ export async function POST(request: Request) {
               });
               
               const responseText = await sheetResponse.text();
-              console.log(`Response Status: ${sheetResponse.status} ${sheetResponse.statusText}`);
-              console.log(`Response Body: ${responseText}`);
+              console.log(`📥 Response Status: ${sheetResponse.status} ${sheetResponse.statusText}`);
+              console.log(`📥 Response Body: ${responseText}`);
+              console.log(`📥 Response Headers:`, {
+                'content-type': sheetResponse.headers.get('content-type'),
+                'content-length': sheetResponse.headers.get('content-length')
+              });
               
               if (sheetResponse.ok) {
                 try {
@@ -209,8 +221,12 @@ export async function POST(request: Request) {
                 }
               } else {
                 lastError = `HTTP ${sheetResponse.status}: ${responseText}`;
-                console.error(`❌ Google Sheets API Error - Attempt ${4 - retries}:`, lastError);
-                console.error('Request payload:', JSON.stringify({
+                console.error(`❌ Google Sheets API Error - Attempt ${4 - retries}:`);
+                console.error('  Status:', sheetResponse.status);
+                console.error('  Error:', lastError);
+                console.error('  Full URL:', webhookUrl);
+                console.error('  Sheet ID was:', data.googleSheetId);
+                console.error('  Request payload:', JSON.stringify({
                   action: 'addStudent',
                   sheetId: data.googleSheetId,
                   data: sheetData
