@@ -112,11 +112,20 @@ export async function POST(request: Request) {
     
     // Also add to Google Sheets if sheet ID is provided
     if (data.googleSheetId) {
+      console.log('🎯 STUDENT POST - Google Sheets sync STARTING');
+    } else {
+      console.warn('⚠️ STUDENT POST - NO SHEET ID PROVIDED - Google Sheets sync SKIPPED');
+      console.warn('📋 Received data keys:', Object.keys(data));
+      console.warn('📋 Received data:', JSON.stringify(data, null, 2));
+    }
+    
+    if (data.googleSheetId) {
       // Send Google Sheets update in background without blocking the response
       (async () => {
         try {
           // Call Google Apps Script directly instead of internal API
           const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
+          console.log('🎯 Sheet ID in request:', data.googleSheetId);
           
           // Format timestamp to remove comma: "27/09/2025 18:44:38"
           const now = new Date();
