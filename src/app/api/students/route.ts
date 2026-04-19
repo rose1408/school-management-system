@@ -475,3 +475,43 @@ export async function PATCH(request: Request) {
     }, { status: 500 });
   }
 }
+
+// DELETE - Delete a student
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const studentId = searchParams.get('id');
+    
+    if (!studentId) {
+      return NextResponse.json({ error: 'Student ID is required' }, { status: 400 });
+    }
+    
+    console.log('🗑️ Deleting student with ID:', studentId);
+    
+    // Delete from database
+    const deletedStudent = await db.student.delete({
+      where: { id: studentId }
+    });
+    
+    console.log('✅ Student deleted from database:', deletedStudent.firstName, deletedStudent.lastName);
+    
+    // Note: We don't delete from Google Sheets as it's a permanent record
+    // But you could add this functionality if desired
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Student deleted successfully',
+      deletedStudent 
+    });
+    
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    
+    if (error instanceof Error && error.message.includes('not found')) {
+      return NextResponse.json({ 
+        error: 'Student not found' 
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({ error: 'Failed to delete student' }, { status: 500 });
+  }
