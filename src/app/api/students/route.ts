@@ -478,36 +478,71 @@ export async function PATCH(request: Request) {
 
     // Test the webhook with a simple ping
     const webhookUrl = `https://script.google.com/macros/s/AKfycbyvRNfnWeQJccbThBdsYrp-DTQbwUNzZfc83cpWsESn7DZ9lJY1kGIKAEZXcrJJA91r/exec`;
+    
+    console.log('🔗 Webhook URL:', webhookUrl);
+    console.log('📤 Sending test payload...');
 
-    const testResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'ping',
-        sheetId: sheetId
-      })
-    });
-
-    if (testResponse.ok) {
-      const result = await testResponse.json();
-      console.log('✅ Google Sheets ping successful:', result);
-      return NextResponse.json({
-        success: true,
-        message: 'Google Sheets connection successful',
-        response: result
+    let testResponse;
+    try {
+      testResponse = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'ping',
+          sheetId: sheetId
+        }),
+        signal: AbortSignal.timeout(15000) // 15 second timeout
       });
-    } else {
-      const errorText = await testResponse.text();
-      console.error('❌ Google Sheets ping failed:', errorText);
+      console.log('📥 Got response, status:', testResponse.status);
+    } catch (fetchError) {
+      console.error('❌ Fetch failed:', fetchError);
       return NextResponse.json({
         success: false,
-        error: `HTTP ${testResponse.status}: ${errorText}`
-      }, { status: 500 });
+        error: fetchError instanceof Error ? fetchError.message : 'Fetch failed'
+      }, { status: 503 });
+    }
+
+    try {
+      const responseText = await testResponse.text();
+      console.log('📥 Response text length:', responseText.length);
+      console.log('📥 Response first 200 chars:', responseText.substring(0, 200));
+      
+      if (testResponse.ok) {
+        try {
+          const result = JSON.parse(responseText);
+          console.log('✅ Google Sheets ping successful:', result);
+          return NextResponse.json({
+            success: true,
+            message: 'Google Sheets connection successful',
+            response: result
+          });
+        } catch (jsonError) {
+          console.warn('⚠️ Response is not JSON (but status 200):', responseText.substring(0, 100));
+          // Non-JSON response but status 200 is OK for Google Apps Script sometimes
+          return NextResponse.json({
+            success: true,
+            message: 'Google Sheets webhook responded',
+            response: responseText.substring(0, 200)
+          });
+        }
+      } else {
+        console.error('❌ Google Sheets ping failed with status:', testResponse.status);
+        return NextResponse.json({
+          success: false,
+          error: `HTTP ${testResponse.status}: ${responseText.substring(0, 200)}`
+        }, { status: 502 });
+      }
+    } catch (textError) {
+      console.error('❌ Failed to read response:', textError);
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to read response from webhook'
+      }, { status: 502 });
     }
   } catch (error) {
-    console.error('❌ Error in PATCH handler:', error);
+    console.error('❌ Unexpected error in PATCH handler:', error);
     console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
     if (error instanceof Error) {
       console.error('Error message:', error.message);
