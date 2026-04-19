@@ -2,6 +2,9 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 
+// Enable debug mode for extension errors by setting: window.__DEBUG_MODE__ = true
+// This will show suppressed extension-related warnings in the console
+
 // Firebase configuration with fallback values
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCsALtmxjmilhge-PJVdWsY1-LnRAmWTJQ',
@@ -35,21 +38,78 @@ if (missingFields.length > 0) {
 
 console.log('Firebase config initialized successfully with project:', firebaseConfig.projectId)
 
-// Add global error handler for Firestore BloomFilter errors
+// Add global error handlers for non-critical warnings
 if (typeof window !== 'undefined') {
   const originalConsoleError = console.error
+  const originalWarn = console.warn
+  
+  // Suppress console.error calls from extensions and non-critical issues
   console.error = (...args) => {
-    // Suppress known non-critical Firestore BloomFilter errors
     const errorMessage = args.join(' ')
+    
+    // Suppress known non-critical Firestore BloomFilter errors
     if (errorMessage.includes('BloomFilter error') || 
         errorMessage.includes('BloomFilterError')) {
-      // Log as warning instead of error for BloomFilter issues
       console.warn('🟡 Firestore BloomFilter warning (non-critical):', ...args)
       return
     }
+    
+    // Suppress extension messaging errors (Grammarly, etc)
+    if (errorMessage.includes('message channel closed') ||
+        errorMessage.includes('A listener indicated an asynchronous response') ||
+        errorMessage.includes('Grammarly') ||
+        errorMessage.includes('extension')) {
+      // Log at debug level only (not visible by default)
+      if (window.__DEBUG_MODE__) {
+        console.warn('🟡 Extension communication warning (non-critical):', ...args)
+      }
+      return
+    }
+    
     // Pass through all other errors normally
     originalConsoleError.apply(console, args)
   }
+  
+  // Suppress console.warn calls from extensions
+  console.warn = (...args) => {
+    const warnMessage = args.join(' ')
+    
+    // Allow Firebase and Firestore warnings through
+    if (warnMessage.includes('Firebase') || 
+        warnMessage.includes('Firestore') ||
+        warnMessage.includes('Network')) {
+      originalWarn.apply(console, args)
+      return
+    }
+    
+    // Suppress extension-related warnings
+    if (warnMessage.includes('extension') ||
+        warnMessage.includes('Grammarly') ||
+        warnMessage.includes('DEFAULT root logger')) {
+      if (window.__DEBUG_MODE__) {
+        originalWarn.apply(console, args)
+      }
+      return
+    }
+    
+    // Pass through other warnings
+    originalWarn.apply(console, args)
+  }
+  
+  // Add global unhandled promise rejection handler for extension errors
+  window.addEventListener('unhandledrejection', (event) => {
+    const errorMessage = event.reason?.message || String(event.reason)
+    
+    // Suppress extension-related unhandled rejections
+    if (errorMessage.includes('message channel closed') ||
+        errorMessage.includes('A listener indicated an asynchronous response') ||
+        errorMessage.includes('extension')) {
+      event.preventDefault() // Prevents browser from logging the error
+      if (window.__DEBUG_MODE__) {
+        console.warn('🟡 Extension error (suppressed):', errorMessage)
+      }
+    }
+  })
 }
 
 // Initialize Firebase
@@ -116,6 +176,14 @@ export const withRetry = async <T>(
   }
   
   throw lastError!
+}
+
+// Utility function to toggle debug mode for extension errors
+export const toggleExtensionDebugMode = (enabled: boolean) => {
+  if (typeof window !== 'undefined') {
+    window.__DEBUG_MODE__ = enabled
+    console.log(enabled ? '🔍 Extension debug mode ENABLED' : '🔍 Extension debug mode DISABLED')
+  }
 }
 
 export default app

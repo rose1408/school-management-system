@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       (async () => {
         try {
           // Call Google Apps Script directly instead of internal API
-          const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+          const webhookUrl = `https://script.google.com/macros/s/AKfycbwMLpT565AVyDpMQZ0QF5NbfxIkS5uY0fEr6DqYmBTG4uKH3PkO82Pap2vVUH9uNPB9/exec`;
           
           // Format timestamp to remove comma: "27/09/2025 18:44:38"
           const now = new Date();
@@ -163,7 +163,9 @@ export async function POST(request: Request) {
             referralDetails: referralDetails
           };
           
-          console.log('Sending student data to Google Sheets:', sheetData);
+          console.log('📤 Sending student data to Google Sheets:', sheetData);
+          console.log('🔗 Webhook URL:', webhookUrl);
+          console.log('📋 Sheet ID:', data.googleSheetId);
           
           // Retry logic for Google Sheets webhook
           let retries = 3;
@@ -171,6 +173,8 @@ export async function POST(request: Request) {
           
           while (retries > 0) {
             try {
+              console.log(`\n📨 Attempt ${4 - retries}/3 - Calling Google Sheets webhook...`);
+              
               const sheetResponse = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: {
@@ -184,30 +188,58 @@ export async function POST(request: Request) {
                 signal: AbortSignal.timeout(30000) // 30 second timeout
               });
               
+              const responseText = await sheetResponse.text();
+              console.log(`Response Status: ${sheetResponse.status} ${sheetResponse.statusText}`);
+              console.log(`Response Body: ${responseText}`);
+              
               if (sheetResponse.ok) {
-                const sheetResult = await sheetResponse.json();
-                console.log('Successfully added student to Google Sheets:', updatedStudent.firstName, updatedStudent.lastName);
-                console.log('Google Sheets response:', sheetResult);
-                return;
-              } else {
-                lastError = `HTTP ${sheetResponse.status}: ${await sheetResponse.text()}`;
-                console.warn(`Attempt ${4 - retries} failed:`, lastError);
-                retries--;
-                if (retries > 0) {
-                  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                try {
+                  const sheetResult = JSON.parse(responseText);
+                  if (sheetResult.success === false) {
+                    console.warn('⚠️ Webhook returned error:', sheetResult.error);
+                    lastError = `Google Sheets error: ${sheetResult.error}`;
+                  } else {
+                    console.log('✅ Successfully added student to Google Sheets:', updatedStudent.firstName, updatedStudent.lastName);
+                    console.log('✅ Google Sheets response:', sheetResult);
+                    return;
+                  }
+                } catch (parseError) {
+                  console.log('✅ Successfully added student to Google Sheets (non-JSON response):', updatedStudent.firstName, updatedStudent.lastName);
+                  return;
                 }
+              } else {
+                lastError = `HTTP ${sheetResponse.status}: ${responseText}`;
+                console.error(`❌ Google Sheets API Error - Attempt ${4 - retries}:`, lastError);
+                console.error('Request payload:', JSON.stringify({
+                  action: 'addStudent',
+                  sheetId: data.googleSheetId,
+                  data: sheetData
+                }, null, 2));
               }
-            } catch (fetchError) {
-              lastError = fetchError;
-              console.warn(`Attempt ${4 - retries} failed with error:`, fetchError);
+              
               retries--;
               if (retries > 0) {
+                console.log(`⏳ Waiting 2 seconds before retry...`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              }
+            } catch (fetchError) {
+              lastError = fetchError instanceof Error ? fetchError.message : String(fetchError);
+              console.error(`❌ Fetch error on Attempt ${4 - retries}:`, lastError);
+              retries--;
+              if (retries > 0) {
+                console.log(`⏳ Waiting 2 seconds before retry...`);
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
               }
             }
           }
           
-          console.error('Failed to add student to Google Sheets after 3 retries. Last error:', lastError);
+          console.error('❌ Failed to add student to Google Sheets after 3 retries.');
+          console.error('Last error:', lastError);
+          console.error('📋 Troubleshooting:');
+          console.error('  1. Verify Google Sheet ID is correct');
+          console.error('  2. Ensure "ENROLLMENT" sheet exists in the Google Sheet');
+          console.error('  3. Check Google Apps Script is deployed and has edit permissions');
+          console.error('  4. Use diagnostic: /api/check-sheets-webhook?sheetId=' + data.googleSheetId);
         } catch (sheetError) {
           console.error('Error adding to Google Sheets (but student created locally):', sheetError);
         }
@@ -301,7 +333,9 @@ export async function PUT(request: Request) {
             referralDetails: referralDetails
           };
           
-          console.log('Syncing updated student to Google Sheets:', sheetData);
+          console.log('🔄 Syncing updated student to Google Sheets:', sheetData);
+          console.log('🔗 Webhook URL:', webhookUrl);
+          console.log('📋 Sheet ID:', googleSheetId);
           
           // Retry logic for Google Sheets webhook
           let retries = 3;
@@ -309,6 +343,8 @@ export async function PUT(request: Request) {
           
           while (retries > 0) {
             try {
+              console.log(`\n📨 Attempt ${4 - retries}/3 - Calling Google Sheets webhook...`);
+              
               const sheetResponse = await fetch(webhookUrl, {
                 method: 'POST',
                 headers: {
@@ -322,30 +358,50 @@ export async function PUT(request: Request) {
                 signal: AbortSignal.timeout(30000) // 30 second timeout
               });
               
+              const responseText = await sheetResponse.text();
+              console.log(`Response Status: ${sheetResponse.status} ${sheetResponse.statusText}`);
+              console.log(`Response Body: ${responseText}`);
+              
               if (sheetResponse.ok) {
-                const sheetResult = await sheetResponse.json();
-                console.log('Successfully updated student in Google Sheets:', student.firstName, student.lastName);
-                console.log('Google Sheets response:', sheetResult);
-                return;
-              } else {
-                lastError = `HTTP ${sheetResponse.status}: ${await sheetResponse.text()}`;
-                console.warn(`Attempt ${4 - retries} failed:`, lastError);
-                retries--;
-                if (retries > 0) {
-                  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                try {
+                  const sheetResult = JSON.parse(responseText);
+                  if (sheetResult.success === false) {
+                    console.warn('⚠️ Webhook returned error:', sheetResult.error);
+                    lastError = `Google Sheets error: ${sheetResult.error}`;
+                  } else {
+                    console.log('✅ Successfully updated student in Google Sheets:', student.firstName, student.lastName);
+                    console.log('✅ Google Sheets response:', sheetResult);
+                    return;
+                  }
+                } catch (parseError) {
+                  console.log('✅ Successfully updated student in Google Sheets (non-JSON response):', student.firstName, student.lastName);
+                  return;
                 }
+              } else {
+                lastError = `HTTP ${sheetResponse.status}: ${responseText}`;
+                console.error(`❌ Google Sheets API Error - Attempt ${4 - retries}:`, lastError);
               }
-            } catch (fetchError) {
-              lastError = fetchError;
-              console.warn(`Attempt ${4 - retries} failed with error:`, fetchError);
+              
               retries--;
               if (retries > 0) {
+                console.log(`⏳ Waiting 2 seconds before retry...`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+              }
+            } catch (fetchError) {
+              lastError = fetchError instanceof Error ? fetchError.message : String(fetchError);
+              console.error(`❌ Fetch error on Attempt ${4 - retries}:`, lastError);
+              retries--;
+              if (retries > 0) {
+                console.log(`⏳ Waiting 2 seconds before retry...`);
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
               }
             }
           }
           
-          console.error('Failed to update student in Google Sheets after 3 retries. Last error:', lastError);
+          console.error('❌ Failed to update student in Google Sheets after 3 retries.');
+          console.error('Last error:', lastError);
+          console.error('📋 Troubleshooting: /api/check-sheets-webhook?sheetId=' + googleSheetId);
+
         } catch (sheetError) {
           console.error('Error updating in Google Sheets (but student updated locally):', sheetError);
         }
@@ -370,28 +426,52 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE - Delete a student
-export async function DELETE(request: Request) {
+// Test Google Sheets connection
+export async function PATCH(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    
-    if (!id) {
-      return NextResponse.json({ error: 'Student ID is required' }, { status: 400 });
+    const { sheetId } = await request.json();
+
+    if (!sheetId) {
+      return NextResponse.json({ error: 'Sheet ID is required' }, { status: 400 });
     }
-    
-    await db.student.delete({
-      where: { id }
+
+    console.log('Testing Google Sheets connection for sheet ID:', sheetId);
+
+    // Test the webhook with a simple ping
+    const webhookUrl = `https://script.google.com/macros/s/AKfycbw_2hPsHFyUvhBLoIHtuJKy6wgS9UoHOZFS7t0twrK6nHhKxKQI1Ug2NwVwp4mZu5b8kw/exec`;
+
+    const testResponse = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'ping',
+        sheetId: sheetId
+      })
     });
-    
-    return NextResponse.json({ message: 'Student deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting student:', error);
-    
-    if (error instanceof Error && error.message.includes('not found')) {
-      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+
+    if (testResponse.ok) {
+      const result = await testResponse.json();
+      console.log('Google Sheets ping successful:', result);
+      return NextResponse.json({
+        success: true,
+        message: 'Google Sheets connection successful',
+        response: result
+      });
+    } else {
+      const errorText = await testResponse.text();
+      console.error('Google Sheets ping failed:', errorText);
+      return NextResponse.json({
+        success: false,
+        error: `HTTP ${testResponse.status}: ${errorText}`
+      }, { status: 500 });
     }
-    
-    return NextResponse.json({ error: 'Failed to delete student' }, { status: 500 });
+  } catch (error) {
+    console.error('Error testing Google Sheets connection:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

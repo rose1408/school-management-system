@@ -1634,6 +1634,7 @@ interface GoogleSheetsConfigModalProps {
 
 function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave, showModal }: GoogleSheetsConfigModalProps) {
   const [sheetId, setSheetId] = useState(googleSheetId);
+  const [isTesting, setIsTesting] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1642,6 +1643,37 @@ function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave, showModal }: 
       return;
     }
     onSave(sheetId.trim());
+  };
+
+  const testConnection = async () => {
+    if (!sheetId.trim()) {
+      showModal('warning', 'Invalid Input', 'Please enter a Google Sheet ID first.');
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      const response = await fetch('/api/students', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sheetId: sheetId.trim() })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showModal('success', 'Connection Successful!', 'Google Sheets connection is working properly.');
+      } else {
+        showModal('error', 'Connection Failed', `Failed to connect to Google Sheets: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error testing connection:', error);
+      showModal('error', 'Connection Failed', 'An error occurred while testing the connection.');
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const extractSheetId = (url: string) => {
@@ -1728,13 +1760,28 @@ function GoogleSheetsConfigModal({ googleSheetId, onClose, onSave, showModal }: 
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
+              type="button"
+              onClick={testConnection}
+              disabled={isTesting}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 transition-colors flex items-center gap-2"
+            >
+              {isTesting ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Testing...
+                </>
+              ) : (
+                'Test Connection'
+              )}
+            </button>
+            <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Save Configuration
             </button>
